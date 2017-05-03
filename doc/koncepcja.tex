@@ -1,74 +1,59 @@
 \documentclass[a4paper]{article}
 
-\usepackage[english,polish]{babel}
+\usepackage[polish]{babel}
 \usepackage{polski}
-\usepackage{microtype}
 \usepackage[utf8]{inputenc}
-\usepackage{gensymb}
-\frenchspacing
-\usepackage{ragged2e}
-\setlength{\RaggedRightParindent}{\parindent}
 \usepackage[]{geometry}
 \usepackage{indentfirst}
-\usepackage{blindtext}
-\usepackage{listings}
-\usepackage{mathtools}
-\usepackage{graphicx}
-\usepackage{hyperref}
-\usepackage{changepage}
-\usepackage{xcolor}
-\newcommand{\code}[1]{\texttt{#1}}
-%\setcounter{secnumdepth}{1}
+\usepackage{ragged2e}
 
-\lstset{language=C++,
-keywordstyle=\color{blue},
-basicstyle=\scriptsize\ttfamily,
-commentstyle=\ttfamily\itshape\color{gray},
-stringstyle=\ttfamily,
-morecomment=[l][\color{magenta}]{\#},
-showstringspaces=false,
-breaklines=true,
-xleftmargin=20pt
+\title {
+  Sygnalizacja świetlna
+  \\ Projekt wstępny
 }
 
-\title{
-Sygnalizacja świetlna
-\\ Projekt wstępny
-}
-\date{}
+\date{02.05.2017}
+
 \author{Michał Błotniak, Adrianna Małkiewicz}
 
 \begin{document}
-\RaggedRight
 
 \maketitle
 
-\section{Opis zagadnienia}
-Celem projektu będzie rozwiazanie problemu optymalizacji działania sygnalizacji
-świetlnej na skrzyżowaniu. Dla podanych funkcji natężenia ruchu w ciągu dnia
-poszukiwane będą momenty zmiany świateł, które spowodują minimalizację sumarycznego
-czasu spędzonego na skrzyżowaniu.
+\justify
 
-Skrzyżowanie składa się z 4 dróg wjeżdżających posiadajacych niezależne profile
-natężenia, które opisują ile samochodów pojawia się w danej chwili. Samochód stojący
-bezpośrednio przed światłami może wjechać na skrzyżowanie jeśli ma zielone światło
-oraz na skrzyżowaniu nie przebywa obecnie samochód jadący w tym samym kierunku.
-Po wjeździe na skrzyżowanie samochód przebywa na nim pewien czas, ustalony dla
-każdej instancji problemu.
-Samochody wjeżdżają kolejno na skrzyżowanie do momentu wyczerpania samochodów
-w kolejce lub zmiany światła.
+\section{Opis zagadnienia}
+
+Celem projektu będzie rozwiazanie problemu optymalizacji działania sygnalizacji świetlnej na skrzyżowaniu. Dla podanych
+funkcji natężenia ruchu w ciągu dnia poszukiwane będą momenty zmiany świateł, które spowodują minimalizację
+sumarycznego czasu spędzonego na skrzyżowaniu.
+
+Skrzyżowanie składa się z 4 dróg wjeżdżających posiadajacych niezależne profile natężenia, które opisują ile samochodów
+pojawia się w danej chwili. Samochód stojący bezpośrednio przed światłami może wjechać na skrzyżowanie jeśli ma zielone
+światło oraz na skrzyżowaniu nie przebywa obecnie samochód jadący w tym samym kierunku. Po wjeździe na skrzyżowanie
+samochód przebywa na nim pewien czas, ustalony dla każdej instancji problemu. Samochody wjeżdżają kolejno na
+skrzyżowanie do momentu wyczerpania samochodów w kolejce lub zmiany światła.
+
 (CZY PRZEJAZD PRZEZ SKRZYŻOWANIE ZAJMUJE CZAS?)
-(CZY MOŻEMY ZAŁOŻYĆ ŻE SAMOCHODY JADĄ TYLKO PROSTO [tzn. zawsze opuszczają skrzyżowanie
+
+(CZY MOŻEMY ZAŁOŻYĆ ŻE SAMOCHODY JADĄ TYLKO PROSTO [tzn. zawsze opuszczają skrzyżowanie w stałym czasie]?)
+
 (PRZYJMUJEMY CZAS ZMIANY ŚWIATEŁ?)
-w stałym czasie]?)
+
 (CZY FUNKCJE NATĘŻENIA SĄ DYSKRETNE?)
+
 (CZY MOŻEMY PRZYJĄĆ KWANT CZASU?)
-\subsection{}
+
 \section{Przestrzeń przeszukiwania}
 (CZY PUNKTY TO KROTKI ZAWIERAJĄCE CHWILE ZMIAN ŚWIATEŁ?)
+
 (CZY SĄSIEDZTWO TO DOSTAWIENIE STANU W DOWOLNYM MOMENCIE? NIEOGRANICZONE OKNO?)
+
 \section{Propozycja postaci funkcji celu}
 (SUMARYCZNY CZAS SPĘDZONY NA SKRZYŻOWANIU?)
+
 \section{Metoda optymalizacji}
+
 \section{Przewidywane wyniki pracy}
+
 \end{document}
