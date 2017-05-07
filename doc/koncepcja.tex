@@ -7,6 +7,7 @@
 \usepackage{indentfirst}
 \usepackage{ragged2e}
 \usepackage{hyperref}
+\usepackage{mathtools}
 
 \frenchspacing
 
@@ -61,17 +62,100 @@ kolejno na skrzyżowanie do momentu wyczerpania samochodów w kolejce lub zmiany
 światła.
 
 \section{Przestrzeń przeszukiwania}
+Przestrzenią przeszukiwań będzie przestrzeń $[0, 1]^n$, gdzie $n$ to liczba
+przedziałów czasowych, a każda z wartości od 0 do 1 oznacza stosunek czasu światła
+zielonego w kierunku NS do czasu przedziału.
 
+Jako że rozwiązania są punktami w n-wymiarowej przestrzeni metryką będzie
+metryka euklidesowa (odległość między dwoma punktami).
+% WZÓR NA METRYKE
 
-(CZY PUNKTY TO KROTKI ZAWIERAJĄCE CHWILE ZMIAN ŚWIATEŁ?)
-
-(CZY SĄSIEDZTWO TO DOSTAWIENIE STANU W DOWOLNYM MOMENCIE? NIEOGRANICZONE OKNO?)
+%Punkty sąsiadują ze sobą, jeśli ich odległość jest mniejsza od promienia
+%sąsiedztwa $r$.
+Wszystkie wartości czasowe liczone będą w minutach i ich ułamkach.
 
 \section{Propozycja postaci funkcji celu}
-(SUMARYCZNY CZAS SPĘDZONY NA SKRZYŻOWANIU?)
+Funkcja celu będzie sumarycznym czasem spędzonym na skrzyżowaniu przez wszystkie
+samochody w przeciągu całej doby. Czas ten będzie liczony poprzez odtworzenie
+symulacji dla danego punktu z przestrzeni problemu. Wartość funkcji będzie
+minimalizowana.
+
+\paragraph{Przykład} Niech liczba przedziałów czasowych $n=3$, czas
+przejeżdżania samochodów $p=2h$, punkt przestrzeni stanów $x=(0.375, 0.625, 0.5)$
+oraz pojawianie się samochodów będzie określone tablicą~\ref{tab:example}.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{| c | c | c | c | c |}
+        \hline
+         & N & E & S & W \\ \hline
+         $i=0, t=0$ & 2 & 1 & 1 & 2\\ \hline
+         $i=1, t=8$ & 1 & 2 & 1 & 2\\ \hline
+         $i=2, t=16$ & 1 & 2 & 3 & 1\\ \hline
+    \end{tabular}
+    \caption{Liczba samochodów przyjeżdżająca z danego kierunku w danej chwili\label{tab:example}}
+\end{table}
+
+Wartość funkcji celu będzie liczona ze wzoru:
+$$f(x) = \sum\limits_{T} c_i * d_i $$
+
+gdzie T jest zbiorem przedziałów czasu o długości $d_i$, w których czeka pewne $c_i$
+samochodów.
+
+\begin{table}[ht]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{| c | c | c | c | c | c | c | c | c | c | c | c | c |}
+        \hline
+         $T_i$     & $[0, 2]$ & $[2, 4]$ & $[4, 6]$ & $[6, 8]$ & $[8, 13]$ & $[13, 15]$ & $[15, 16]$ & $[16, 17]$ & $[17, 19]$ & $[19, 21]$ & $[21, 23]$ & $[23, 24]$ \\ \hline
+         $d_i [h]$ & 2 & 2 & 2 & 2 & 5 & 2 & 1 & 1 & 2 & 2 & 2 & 1 \\ \hline
+         $c_i$     & 4 & 2 & 1 & 0 & 4 & 2 & 0 & 7 & 5 & 4 & 2 & 1 \\ \hline
+    \end{tabular}
+}
+    \caption{Zbiór przedziałów czasowych $T$ wraz z ich długością $d_i$ oraz
+    liczbą czekających samochodów $c_i$, dla punktu $x=(0.375, 0.625, 0.5)$\label{tab:intervals}.}
+\end{table}
+
+W symulacji zostają wyliczone wartości dla punktu $x$ zapisane w tablicy~\ref{tab:intervals}. 
+Wtedy wartość funkcji celu w punkcie $x$ będzie wynosić:
+$$f(x) = \sum\limits_{T} d_i * c_i = 4*2h + 3*2h + 1*2h + 0 + 4*5h + 2*2h + 0 + 7*1h + 5*2h + 4*2h + 2*2h + 1*1h = 70h $$
 
 \section{Metoda optymalizacji}
+Do optymalizacji zostanie wykorzystany mutacyjny algorytm ewolucyjny
+z krzyżowaniem. Osobniki zostaną sparowane każdy z każdym. Krzyżowanie par będzie
+krzyżowaniem uśredniającym z wylosowaną wagą udziału osobnika pierwszego
+(z przedziału $[0, 1]$).
+
+Następnie każdy nowy osobnik zostanie poddany mutacji,
+czyli przysunięty o losowy wektor ${\rm I\!R}^n$. Współrzędne wektora będą
+losowane zgodnie ze standardowym rozkładem normalnym o odchyleniu standardowym
+podanym jako parametr algorytmu. Dodatkowo wszystkie współrzędne otrzymanych
+osobników będą normalizowane do przedziału $[0, 1]$ przy użyciu operacji modulo 1.
+
+Selekcja będzie selekcją proporcjonalną. Każdemu punktowi zostanie przydzielone
+prawdopodobieństwo odwrotnie proporcjonalne do jego rangi. Następnie punkty
+zostaną wylosowane przy pomocy metody odwrotności dystrybuanty. W ten sposób
+wybrane zostanie nowe pokolenie składające się z $\mu$ punktów.
+
+Pierwsze pokolenie zostanie wygenerowane poprzez wylosowanie punktów z
+przestrzeni $[0, 1]^n$.
+
+Algorytm działa tak długo, aż zostanie wygenerowane pokolenie o numerze $T$,
+z którego wybierany jest najlepszy osobnik jako wynik działania.
 
 \section{Przewidywane wyniki pracy}
+Oczekiwanym rezultatem działania algorytmu jest uzyskanie mniejszego czasu
+spędzonego na skrzyżowaniu niż w przypadku stałego cyklu zmiany świateł,
+ustalonego a priori.
+
+Przykłady testowe będą odzwierciedlać rzeczywiste sytuacje, gdzie zazwyczaj
+ruch jest wzmożony rano i wieczorem, przeciętny w południe oraz niski w nocy.
+Różne instancje problemu możemy uzyskać poprzez używanie różnego ziarna
+w generatorach losowych.
+
+Wyniki działania algorytmu zostaną przedstawione na wykresie wartości funkcji
+celu w zależności od numeru pokolenia. Pokazane będą przebiegi
+algorytmu dla pewnego problemu, dodatkowo zestawione z efektem działania
+ustalonego z góry cyklu świateł.
 
 \end{document}
