@@ -28,19 +28,19 @@
 
 \section{Opis zagadnienia}
 
-Celem projektu będzie rozwiazanie problemu optymalizacji działania sygnalizacji
+Celem projektu będzie rozwiązanie problemu optymalizacji działania sygnalizacji
 świetlnej na skrzyżowaniu. Dla podanych rozkładów losowych natężenia ruchu
-w ciągu dnia poszukiwany będzie sposób zmiany świateł, który spowoduje
+w ciągu dnia będzie poszukiwany sposób zmiany świateł, który spowoduje
 minimalizację sumarycznego czasu spędzonego na skrzyżowaniu.
 
-Symulowany będzie ruch samochodów w ciągu doby. Dla uproszczenia problemu
+Będzie symulowany ruch samochodów w ciągu doby. Dla uproszczenia problemu
 zakładamy podział doby na n przedziałów. Skrzyżowanie składa się z 4 dróg, które
-nazwane zostały nazwami kierunków geograficznych (NESW). W każdym przedziale
+zostały nazwane nazwami kierunków geograficznych (NESW). W każdym przedziale
 czasowym, z każdego kierunku, przyjeżdza losowa liczba samochodów zgodnie
 z określonym dla tego kierunku rozkładem prawdopodobieństwa. W zależności od
-pór dnia, opisanych w tablicy~\ref{tab:hours}, wykorzystywane będą różne
+pór dnia, opisanych w tablicy~\ref{tab:hours}, będą wykorzystywane różne
 rozkłady Poissona z parametrami ustalonymi dla danej instancji problemu.
-W każdym z przedziałów poszukiwany będzie stosunek czasu światła zielonego
+W każdym z przedziałów będzie poszukiwany stosunek czasu światła zielonego
 w kierunku północ-południe (NS) do czasu przedziału.
 
 \begin{table}[ht]
@@ -56,10 +56,10 @@ w kierunku północ-południe (NS) do czasu przedziału.
 Samochód stojący bezpośrednio przed światłami może wjechać na skrzyżowanie
 jeśli ma zielone światło oraz na skrzyżowaniu nie przebywa obecnie samochód
 jadący z tego samego kierunku lub z kierunku prostopadłego. Po wjeździe na
-skrzyżowanie samochód przebywa na nim losowy czas, zgodny z rozkładem normalnym
-o parametrach ustalonych dla danej instancji problemu. Samochody wjeżdżają
-kolejno na skrzyżowanie do momentu wyczerpania samochodów w kolejce lub zmiany
-światła.
+skrzyżowanie samochód przebywa na nim losową ilość czasu, zgodną z rozkładem
+normalnym o parametrach ustalonych dla danej instancji problemu. Samochody
+wjeżdżają kolejno na skrzyżowanie do momentu ich wyczerpania w w kolejce
+lub zmiany światła.
 
 \section{Przestrzeń przeszukiwania}
 Przestrzenią przeszukiwań będzie przestrzeń $[0, 1]^n$, gdzie $n$ to liczba
@@ -68,11 +68,10 @@ zielonego w kierunku NS do czasu przedziału.
 
 Jako że rozwiązania są punktami w n-wymiarowej przestrzeni metryką będzie
 metryka euklidesowa (odległość między dwoma punktami).
-% WZÓR NA METRYKE
 
-%Punkty sąsiadują ze sobą, jeśli ich odległość jest mniejsza od promienia
-%sąsiedztwa $r$.
-Wszystkie wartości czasowe liczone będą w minutach i ich ułamkach.
+% TODO: WZÓR NA METRYKĘ
+
+Wszystkie wartości czasowe będą liczone w minutach i ich ułamkach.
 
 \section{Propozycja postaci funkcji celu}
 Funkcja celu będzie sumarycznym czasem spędzonym na skrzyżowaniu przez wszystkie
@@ -83,6 +82,7 @@ minimalizowana.
 \paragraph{Przykład} Niech liczba przedziałów czasowych $n=3$, czas
 przejeżdżania samochodów $p=2h$, punkt przestrzeni stanów $x=(0.375, 0.625, 0.5)$
 oraz pojawianie się samochodów będzie określone tablicą~\ref{tab:example}.
+Dla uproszczenia w przykładzie jednostką przykładową będą godziny.
 
 \begin{table}[ht]
     \centering
@@ -97,9 +97,9 @@ oraz pojawianie się samochodów będzie określone tablicą~\ref{tab:example}.
 \end{table}
 
 Wartość funkcji celu będzie liczona ze wzoru:
-$$f(x) = \sum\limits_{T} c_i * d_i $$
+$$f(x) = \sum\limits_{I} c_i * d_i $$
 
-gdzie T jest zbiorem przedziałów czasu o długości $d_i$, w których czeka pewne $c_i$
+gdzie I jest zbiorem przedziałów czasu o długości $d_i$, w których czeka pewne $c_i$
 samochodów.
 
 \begin{table}[ht]
@@ -107,18 +107,18 @@ samochodów.
     \resizebox{\textwidth}{!}{
     \begin{tabular}{| c | c | c | c | c | c | c | c | c | c | c | c | c |}
         \hline
-         $T_i$     & $[0, 2]$ & $[2, 4]$ & $[4, 6]$ & $[6, 8]$ & $[8, 13]$ & $[13, 15]$ & $[15, 16]$ & $[16, 17]$ & $[17, 19]$ & $[19, 21]$ & $[21, 23]$ & $[23, 24]$ \\ \hline
+         $I_i$     & $[0, 2]$ & $[2, 4]$ & $[4, 6]$ & $[6, 8]$ & $[8, 13]$ & $[13, 15]$ & $[15, 16]$ & $[16, 17]$ & $[17, 19]$ & $[19, 21]$ & $[21, 23]$ & $[23, 24]$ \\ \hline
          $d_i [h]$ & 2 & 2 & 2 & 2 & 5 & 2 & 1 & 1 & 2 & 2 & 2 & 1 \\ \hline
          $c_i$     & 4 & 2 & 1 & 0 & 4 & 2 & 0 & 7 & 5 & 4 & 2 & 1 \\ \hline
     \end{tabular}
 }
-    \caption{Zbiór przedziałów czasowych $T$ wraz z ich długością $d_i$ oraz
+    \caption{Zbiór przedziałów czasowych $I$ wraz z ich długością $d_i$ oraz
     liczbą czekających samochodów $c_i$, dla punktu $x=(0.375, 0.625, 0.5)$\label{tab:intervals}.}
 \end{table}
 
-W symulacji zostają wyliczone wartości dla punktu $x$ zapisane w tablicy~\ref{tab:intervals}. 
+W symulacji zostają wyliczone wartości dla punktu $x$ zapisane w tablicy~\ref{tab:intervals}.
 Wtedy wartość funkcji celu w punkcie $x$ będzie wynosić:
-$$f(x) = \sum\limits_{T} d_i * c_i = 4*2h + 3*2h + 1*2h + 0 + 4*5h + 2*2h + 0 + 7*1h + 5*2h + 4*2h + 2*2h + 1*1h = 70h $$
+$$f(x) = \sum\limits_{I} d_i * c_i = 4*2h + 3*2h + 1*2h + 0 + 4*5h + 2*2h + 0 + 7*1h + 5*2h + 4*2h + 2*2h + 1*1h = 70h $$
 
 \section{Metoda optymalizacji}
 Do optymalizacji zostanie wykorzystany mutacyjny algorytm ewolucyjny
@@ -126,16 +126,16 @@ z krzyżowaniem. Osobniki zostaną sparowane każdy z każdym. Krzyżowanie par 
 krzyżowaniem uśredniającym z wylosowaną wagą udziału osobnika pierwszego
 (z przedziału $[0, 1]$).
 
-Następnie każdy nowy osobnik zostanie poddany mutacji,
-czyli przysunięty o losowy wektor ${\rm I\!R}^n$. Współrzędne wektora będą
-losowane zgodnie ze standardowym rozkładem normalnym o odchyleniu standardowym
-podanym jako parametr algorytmu. Dodatkowo wszystkie współrzędne otrzymanych
-osobników będą normalizowane do przedziału $[0, 1]$ przy użyciu operacji modulo 1.
+Następnie każdy nowy osobnik zostanie poddany mutacji, czyli przysunięty
+o losowy wektor z przestrzeni ${\rm I\!R}^n$. Współrzędne wektora będą losowane
+zgodnie ze standardowym rozkładem normalnym o odchyleniu standardowym podanym
+jako parametr algorytmu. Dodatkowo wszystkie współrzędne otrzymanych osobników
+będą normalizowane do przedziału $[0, 1]$ przy użyciu operacji modulo 1.
 
 Selekcja będzie selekcją proporcjonalną. Każdemu punktowi zostanie przydzielone
 prawdopodobieństwo odwrotnie proporcjonalne do jego rangi. Następnie punkty
 zostaną wylosowane przy pomocy metody odwrotności dystrybuanty. W ten sposób
-wybrane zostanie nowe pokolenie składające się z $\mu$ punktów.
+zostanie wybrane nowe pokolenie składające się z $\mu$ punktów.
 
 Pierwsze pokolenie zostanie wygenerowane poprzez wylosowanie punktów z
 przestrzeni $[0, 1]^n$.
@@ -154,8 +154,7 @@ Różne instancje problemu możemy uzyskać poprzez używanie różnego ziarna
 w generatorach losowych.
 
 Wyniki działania algorytmu zostaną przedstawione na wykresie wartości funkcji
-celu w zależności od numeru pokolenia. Pokazane będą przebiegi
-algorytmu dla pewnego problemu, dodatkowo zestawione z efektem działania
-ustalonego z góry cyklu świateł.
+celu w zależności od numeru pokolenia. Przebiegi algorytmu dla pewnego problemu
+będą dodatkowo zestawione z efektem działania ustalonego z góry cyklu świateł.
 
 \end{document}
