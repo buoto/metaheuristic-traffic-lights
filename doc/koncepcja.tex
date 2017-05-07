@@ -6,6 +6,9 @@
 \usepackage[]{geometry}
 \usepackage{indentfirst}
 \usepackage{ragged2e}
+\usepackage{hyperref}
+
+\frenchspacing
 
 \title {
   Sygnalizacja świetlna
@@ -25,29 +28,41 @@
 \section{Opis zagadnienia}
 
 Celem projektu będzie rozwiazanie problemu optymalizacji działania sygnalizacji
-świetlnej na skrzyżowaniu. Dla podanych funkcji natężenia ruchu w ciągu dnia
-poszukiwane będą momenty zmiany świateł, które spowodują minimalizację
-sumarycznego czasu spędzonego na skrzyżowaniu.
+świetlnej na skrzyżowaniu. Dla podanych rozkładów losowych natężenia ruchu
+w ciągu dnia poszukiwany będzie sposób zmiany świateł, który spowoduje
+minimalizację sumarycznego czasu spędzonego na skrzyżowaniu.
 
-Skrzyżowanie składa się z 4 dróg wjeżdżających posiadajacych niezależne profile
-natężenia, które opisują ile samochodów pojawia się w danej chwili. Samochód
-stojący bezpośrednio przed światłami może wjechać na skrzyżowanie jeśli ma zielone
-światło oraz na skrzyżowaniu nie przebywa obecnie samochód jadący w tym samym
-kierunku. Po wjeździe na skrzyżowanie samochód przebywa na nim pewien czas,
-ustalony dla każdej instancji problemu. Samochody wjeżdżają kolejno na
-skrzyżowanie do momentu wyczerpania samochodów w kolejce lub zmiany światła.
+Symulowany będzie ruch samochodów w ciągu doby. Dla uproszczenia problemu
+zakładamy podział doby na n przedziałów. Skrzyżowanie składa się z 4 dróg, które
+nazwane zostały nazwami kierunków geograficznych (NESW). W każdym przedziale
+czasowym, z każdego kierunku, przyjeżdza losowa liczba samochodów zgodnie
+z określonym dla tego kierunku rozkładem prawdopodobieństwa. W zależności od
+pór dnia, opisanych w tablicy~\ref{tab:hours}, wykorzystywane będą różne
+rozkłady Poissona z parametrami ustalonymi dla danej instancji problemu.
+W każdym z przedziałów poszukiwany będzie stosunek czasu światła zielonego
+w kierunku północ-południe (NS) do czasu przedziału.
 
-(CZY PRZEJAZD PRZEZ SKRZYŻOWANIE ZAJMUJE CZAS?)
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{| c | c | c | c |}
+        \hline
+        Rano & W południe & Wieczorem & W nocy \\ \hline
+        6 - 10 & 10 - 15 & 15 - 19 & 19 - 6 \\ \hline
+    \end{tabular}
+    \caption{Pory dnia z przedziałami czasowymi\label{tab:hours}}
+\end{table}
 
-(CZY MOŻEMY ZAŁOŻYĆ ŻE SAMOCHODY JADĄ TYLKO PROSTO [tzn. zawsze opuszczają skrzyżowanie w stałym czasie]?)
-
-(PRZYJMUJEMY CZAS ZMIANY ŚWIATEŁ?)
-
-(CZY FUNKCJE NATĘŻENIA SĄ DYSKRETNE?)
-
-(CZY MOŻEMY PRZYJĄĆ KWANT CZASU?)
+Samochód stojący bezpośrednio przed światłami może wjechać na skrzyżowanie
+jeśli ma zielone światło oraz na skrzyżowaniu nie przebywa obecnie samochód
+jadący z tego samego kierunku lub z kierunku prostopadłego. Po wjeździe na
+skrzyżowanie samochód przebywa na nim losowy czas, zgodny z rozkładem normalnym
+o parametrach ustalonych dla danej instancji problemu. Samochody wjeżdżają
+kolejno na skrzyżowanie do momentu wyczerpania samochodów w kolejce lub zmiany
+światła.
 
 \section{Przestrzeń przeszukiwania}
+
+
 (CZY PUNKTY TO KROTKI ZAWIERAJĄCE CHWILE ZMIAN ŚWIATEŁ?)
 
 (CZY SĄSIEDZTWO TO DOSTAWIENIE STANU W DOWOLNYM MOMENCIE? NIEOGRANICZONE OKNO?)
