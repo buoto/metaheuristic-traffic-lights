@@ -8,8 +8,11 @@ library(magrittr)
 #' @param mu Parent population count.
 #' @param heuristic Optimized function - must accept a list of points and return list of heuristic scores.
 #' @param maxSteps steps 
+#' @param mutationMean Mutation normal distribution mean parameter.
+#' @param mutationSd Mutation normal distribution standard deviation parameter.
+#' @param selectionMinProb Selection probability bias.
 #' @return TODO
-mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutationSd = mutationMean) {
+mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutationSd = mutationMean, selectionMinProb = 0.1) {
   P <- initPopulation(bounds, mu)
   hP <- sapply(P, heuristic)
   
@@ -24,7 +27,7 @@ mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutation
     O <- mutate(R, bounds, mutationMean, mutationSd)
     hO <- sapply(O, heuristic)
     
-    msk <- select(c(P, O), c(hP, hO), mu)
+    msk <- select(c(P, O), c(hP, hO), mu, minProb = selectionMinProb)
     P <- c(P, O)[msk]
     hP <- c(hP, hO)[msk]
   }
@@ -37,7 +40,7 @@ randomPoint <- function(bounds) sapply(bounds, function(range) runif(1, min = ra
 
 reproduce <- function(population) population %>% combn(2, simplify = FALSE) %>%  lapply(crossover)
 
-crossover <- function(pair) {
+crossover <- function(pair) {normalize(c(-1.1, 1, 0), list(c(-1, 1), c(0.12, 0.20), c(1,2)))
   ratio <- runif(1)
   pair[[1]] * ratio + pair[[2]] * (1 - ratio)
 }
@@ -56,4 +59,8 @@ normalizeValue <- function(value, range) {
   mod(value - min, max - min) + min
 }
 
-select <- function(population, scores, count) rank(scores) <= count # TODO
+select <- function(population, scores, count, minProb = 0) {
+  scores <- -scores # minimize
+  normalizedScores <- scores - min(scores)
+  sample(1:length(population), size = count, prob = normalizedScores + minProb * mean(normalizedScores))
+}
