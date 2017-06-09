@@ -1,5 +1,6 @@
 library(plotrix)
 library(polynom)
+library(magrittr)
 
 #' Mutation evolutionary algorithm.
 #' 
@@ -8,7 +9,7 @@ library(polynom)
 #' @param heuristic Optimized function - must accept a list of points and return list of heuristic scores.
 #' @param maxSteps steps 
 #' @return TODO
-mea <- function(bounds, mu, heuristic, maxSteps = 10) {
+mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutationSd = mutationMean) {
   P <- initPopulation(bounds, mu)
   hP <- sapply(P, heuristic)
   
@@ -20,10 +21,10 @@ mea <- function(bounds, mu, heuristic, maxSteps = 10) {
     invisible(readline(prompt="Press [enter] to continue"))
     
     R <- reproduce(P)
-    O <- mutate(R, bounds) # TODO distribution
+    O <- mutate(R, bounds, mutationMean, mutationSd)
     hO <- sapply(O, heuristic)
     
-    msk <- select(c(P, O), c(hP, hO))
+    msk <- select(c(P, O), c(hP, hO), mu)
     P <- c(P, O)[msk]
     hP <- c(hP, hO)[msk]
   }
@@ -34,9 +35,14 @@ initPopulation <- function(bounds, count) replicate(count, randomPoint(bounds), 
 
 randomPoint <- function(bounds) sapply(bounds, function(range) runif(1, min = range[1], max = range[2]))
 
-reproduce <- function(population) population # TODO
+reproduce <- function(population) population %>% combn(2, simplify = FALSE) %>%  lapply(crossover)
 
-mutate <- function(population, bounds, mean = 0.5, sd = mean) {
+crossover <- function(pair) {
+  ratio <- runif(1)
+  pair[[1]] * ratio + pair[[2]] * (1 - ratio)
+}
+
+mutate <- function(population, bounds, mean, sd) {
   lapply(population, function(point) (point + rnorm(length(point), mean = mean, sd = sd)) %>% normalize(bounds))
 }
 
@@ -50,4 +56,4 @@ normalizeValue <- function(value, range) {
   mod(value - min, max - min) + min
 }
 
-select <- function(population, scores) rank(scores) <= length(population)/2 # TODO
+select <- function(population, scores, count) rank(scores) <= count # TODO
