@@ -1,16 +1,12 @@
 library(stats)
 library(magrittr)
 
-n <- 10
-
-directions <- c('N', 'S', 'W', 'E')
-
 roadVector <- function(N = 0, S = 0, W = 0 , E = 0) c(N, S, W, E)
 
 simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
-  if (parameters %>% length %>% mod(24) > 0) stop('parameters length must be dividable by 24')
+  if (parameters %>% length %>% mod(24) > 0) stop('parameters number must be dividable by 24')
   
-  dayPhaseSteps <- floor(length(parameters) / 24 * c(4, 5, 4, 11))
+  dayPhaseSteps <- length(parameters) / 24 * c(4, 5, 4, 11)
   waitingCars <- roadVector()
   waitTime <- 0
   step <- 0
@@ -33,7 +29,7 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
       
       extra <- min(extraStops)
       while (extra < step + 1) {
-        print(c("step", extra, waitingCars))
+        print(c("extra", extra, waitingCars))
         # handle extra events
         waitingCars <- waitingCars + stopEvents[[as.character(extra)]]
         
@@ -51,4 +47,4 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
   print(waitTime)
 }
 
-simulate(rep(1, 24), list(1), list(2), list(2,3), list(1), c(1, 0.1))
+simulate(rep(1, 24), list(1), list(2), list(2), list(1), c(1, 0.1))
