@@ -22,10 +22,10 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
     while (step < phaseEnd) {
       currentTime <- currentTime - 1
       
-      # Updates waiting time with cars left
+      # Update waiting time with cars left
       waitTime <- waitTime + sum(waitingCars)
       
-      # Simulates arriving cars
+      # Simulate arriving cars
       # TODO day phases vvvv
       waitingCars[1] <- waitingCars[1] + rpois(1, distsN)
       waitingCars[2] <- waitingCars[2] + rpois(1, distsS)
@@ -34,67 +34,44 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
       # TODO day phases ^^^^
       print(c("step", step, waitingCars))
       
-      while (currentTime < parameters[step + 1] && (waitingCars[1] || waitingCars[2])) {
-        # Updates current moves
-        print(c("moves1", currentMoves))
-        Nvalue <- ifelse(waitingCars[1] > 0 && currentMoves[1] <= 0, rnorm(1, distEscape$mean, distEscape$sd), currentMoves[1])
-        Svalue <- ifelse(waitingCars[2] > 0 && currentMoves[2] <= 0, rnorm(1, distEscape$mean, distEscape$sd), currentMoves[2])
-        currentMoves <- roadVector(Nvalue, Svalue, 0, 0)
-        move <- min(currentMoves[currentMoves > 0])
-        direction <- which(currentMoves == move)
+      cycles <- list(c(1, 2), c(3, 4))
+      cycleEnd <- parameters[step + 1]
+      for (cc in cycles) {
+        while (currentTime < cycleEnd && any(waitingCars[cc] > 0)) {
+          # Update current moves
+          print(c("moves1", currentMoves))
+          
+          msk <- waitingCars[cc] > 0 & currentMoves[cc] <= 0
+          print(c("mask", msk))
+          currentMoves[cc][msk] <- rnorm(sum(msk), distEscape$mean, distEscape$sd)
+          
+          move <- min(currentMoves[currentMoves > 0])
+          direction <- currentMoves == move
+          
+          # Handle current car's move
+          print(c("moves1", currentMoves))
+          currentTime <- currentTime + move
+          currentMoves <- currentMoves - move
+          waitingCars[direction] <- waitingCars[direction] - 1
+          print(c("left1", waitingCars))
+        }
         
-        # Handles current car's move
-        print(c("moves1", currentMoves))
-        currentTime <- currentTime + move
-        currentMoves <- currentMoves - move
-        waitingCars[direction] <- waitingCars[direction] - 1
-        print(c("left1", waitingCars))
-      }
-      
-      if (currentTime < parameters[step + 1]) {
-        currentTime = parameters[step + 1]
+        if (currentTime < cycleEnd) {
+          currentTime <- cycleEnd
+          
+        } else if (any(currentMoves > 0)) {
+          
+          # Let last car leave the crossroad
+          direction <- currentMoves > 0
+          print(c("moves2", currentMoves))
+          move <- currentMoves[direction]
+          currentTime <- currentTime + move
+          currentMoves <- currentMoves - move
+          waitingCars[direction] <- waitingCars[direction] - 1
+          print(c("left2", waitingCars))
+        }
         
-      } else if (currentMoves[1] || currentMoves[2]) {
-        
-        # Let's last N/S car leave the crossroad
-        direction <- ifelse(direction == 1, 2, 1)
-        print(c("moves2", currentMoves))
-        currentTime <- currentTime + move
-        currentMoves <- currentMoves - move
-        waitingCars[direction] <- waitingCars[direction] - 1
-        print(c("left2", waitingCars))
-      }
-      
-      while (currentTime < 1 && (waitingCars[3] || waitingCars[4])) {
-        
-        # Updates current moves
-        print(c("moves3", currentMoves))
-        Wvalue <- ifelse(waitingCars[3] > 0 && currentMoves[3] <= 0, rnorm(1, distEscape$mean, distEscape$sd), currentMoves[3])
-        Evalue <- ifelse(waitingCars[4] > 0 && currentMoves[4] <= 0, rnorm(1, distEscape$mean, distEscape$sd), currentMoves[4])
-        currentMoves <- roadVector(0, 0, Wvalue, Evalue)
-        move <- min(currentMoves[currentMoves > 0])
-        direction <- which(currentMoves == move)
-        
-        # Handles current car's move
-        print(c("moves3", currentMoves))
-        currentTime <- currentTime + move
-        currentMoves <- currentMoves - move
-        waitingCars[direction] <- waitingCars[direction] - 1
-        print(c("left3", waitingCars))
-      }
-      
-      if (currentTime < 1) {
-        currentTime = 1
-        
-      } else if (currentMoves[3] || currentMoves[4]) {
-        
-        # Let's last W/E car leave the crossroad
-        direction <- ifelse(direction == 3, 4, 3)
-        print(c("moves4", currentMoves))
-        currentTime <- currentTime + move
-        currentMoves <- currentMoves - move
-        waitingCars[direction] <- waitingCars[direction] - 1
-        print(c("left4", waitingCars))
+        cycleEnd <- 1
       }
       
       step <- step + 1
