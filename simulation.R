@@ -1,8 +1,9 @@
 library(stats)
 library(magrittr)
 
-roadVector <- function(N = 0, S = 0, W = 0 , E = 0) c(N, S, W, E)
+roadVector <- function(N = 0, S = 0, W = 0 , E = 0) c(N = N, S = S,  W = W, E = E)
 
+#' TODO handle day phases
 simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
   if (parameters %>% length %>% mod(24) > 0) stop('parameters number must be dividable by 24')
   
@@ -11,7 +12,7 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
   waitTime <- 0
   step <- 0
   phaseEnd <- 0
-  currentTime <- 1
+  currentTime <- 1 # TODO merge with step?
   currentMoves <- roadVector()
   
   for (phase in 1:length(dayPhaseSteps)) {
@@ -25,17 +26,19 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
       waitTime <- waitTime + sum(waitingCars)
       
       # Simulates arriving cars
+      # TODO day phases vvvv
       waitingCars[1] <- waitingCars[1] + rpois(1, distsN)
       waitingCars[2] <- waitingCars[2] + rpois(1, distsS)
       waitingCars[3] <- waitingCars[3] + rpois(1, distsW)
       waitingCars[4] <- waitingCars[4] + rpois(1, distsE)
+      # TODO day phases ^^^^
       print(c("step", step, waitingCars))
       
       while (currentTime < parameters[step + 1] && (waitingCars[1] || waitingCars[2])) {
         # Updates current moves
         print(c("moves1", currentMoves))
-        Nvalue <- ifelse(waitingCars[1] > 0 && currentMoves[1] <= 0, rnorm(1, distEscape[1], distEscape[2]), currentMoves[1])
-        Svalue <- ifelse(waitingCars[2] > 0 && currentMoves[2] <= 0, rnorm(1, distEscape[1], distEscape[2]), currentMoves[2])
+        Nvalue <- ifelse(waitingCars[1] > 0 && currentMoves[1] <= 0, rnorm(1, distEscape$mean, distEscape$sd), currentMoves[1])
+        Svalue <- ifelse(waitingCars[2] > 0 && currentMoves[2] <= 0, rnorm(1, distEscape$mean, distEscape$sd), currentMoves[2])
         currentMoves <- roadVector(Nvalue, Svalue, 0, 0)
         move <- min(currentMoves[currentMoves > 0])
         direction <- which(currentMoves == move)
@@ -66,8 +69,8 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
         
         # Updates current moves
         print(c("moves3", currentMoves))
-        Wvalue <- ifelse(waitingCars[3] > 0 && currentMoves[3] <= 0, rnorm(1, distEscape[1], distEscape[2]), currentMoves[3])
-        Evalue <- ifelse(waitingCars[4] > 0 && currentMoves[4] <= 0, rnorm(1, distEscape[1], distEscape[2]), currentMoves[4])
+        Wvalue <- ifelse(waitingCars[3] > 0 && currentMoves[3] <= 0, rnorm(1, distEscape$mean, distEscape$sd), currentMoves[3])
+        Evalue <- ifelse(waitingCars[4] > 0 && currentMoves[4] <= 0, rnorm(1, distEscape$mean, distEscape$sd), currentMoves[4])
         currentMoves <- roadVector(0, 0, Wvalue, Evalue)
         move <- min(currentMoves[currentMoves > 0])
         direction <- which(currentMoves == move)
@@ -101,4 +104,4 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
   print(waitTime)
 }
 
-simulate(rep(1/2, 24), 2, 2, 2, 2, c(0.3, 0.1))
+simulate(rep(1/2, 24), 2, 2, 2, 2, list(mean = 0.3, sd = 0.1))
