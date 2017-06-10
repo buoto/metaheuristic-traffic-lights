@@ -35,6 +35,6 @@ View(df)
 h <- function (parameters) simulate(parameters,
          list(morning = c(2, 2, 1, 0.5), noon = c(0.5, 0.5, 0.2, 0.1), afternoon = c(2, 2, 0.8, 0.8), night = c(0.3, 0.2, 0.05, 0.1)),
          list(theta = 15))
-solution <- mea(replicate(720, c(0, 1), simplify = FALSE), 20, h, maxSteps = 1000)
+solution <- mea(replicate(720, c(0, 1), simplify = FALSE), 10, h, maxSteps = 1000, mutationMean = 0.01)
 ref <- h(rep(.5, 720))
 

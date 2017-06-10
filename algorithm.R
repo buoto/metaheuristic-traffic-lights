@@ -19,19 +19,28 @@ mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutation
   best <- list(point = P[[which.min(hP)]], h = min(hP))
   
   for (t in 1:maxSteps) {
+    #tic()
     print(t)
     # for testing
     #points(unlist(P), hP)
     #invisible(readline(prompt="Press [enter] to continue"))
+    R <- list()
+    for (i in 1:mu) {
+      msk <- select(P, hP, 2, minProb = selectionMinProb)
+      R <- c(R, list(crossover(P[msk])))
+    }
     
-    R <- reproduce(P)
     O <- mutate(R, bounds, mutationMean, mutationSd)
     hO <- sapply(O, heuristic)
     
-    msk <- succession(c(P, O), c(hP, hO), mu, minProb = selectionMinProb)
-    P <- c(P, O)[msk]
-    hP <- c(hP, hO)[msk]
-    if (min(hP) < best$h) best <- list(point = P[[which.min(hP)]], h = min(hP))
+    if (min(hO) < best$h) {
+      best <- list(point = O[[which.min(hO)]], h = min(hO))
+      print(c(best = best$h))
+    }
+    
+    P <- O
+    hP <- hO
+    #toc()
   }
   best
 }
@@ -42,7 +51,7 @@ randomPoint <- function(bounds) sapply(bounds, function(range) runif(1, min = ra
 
 reproduce <- function(population) population %>% combn(2, simplify = FALSE) %>%  lapply(crossover)
 
-crossover <- function(pair) {normalize(c(-1.1, 1, 0), list(c(-1, 1), c(0.12, 0.20), c(1,2)))
+crossover <- function(pair) {
   ratio <- runif(1)
   pair[[1]] * ratio + pair[[2]] * (1 - ratio)
 }
@@ -61,8 +70,8 @@ normalizeValue <- function(value, range) {
   mod(value - min, max - min) + min
 }
 
-succession <- function(population, scores, count, minProb = 0) {
+select <- function(population, scores, count, minProb = 0) {
   scores <- -scores # minimize
   normalizedScores <- scores - min(scores)
-  sample(1:length(population), size = count, prob = normalizedScores + minProb * mean(normalizedScores))
+  sample(1:length(population), size = count, replace = TRUE, prob = normalizedScores + minProb * mean(normalizedScores))
 }
