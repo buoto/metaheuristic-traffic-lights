@@ -21,17 +21,6 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
     while (step < phaseEnd) {
       currentTime <- currentTime - 1
       
-      if (currentMoves[3] > 0 || currentMoves[4] > 0) {
-        
-        # Lets last E/W car leave crossroad before switching lights
-        print(c("moves1", currentMoves))
-        direction <- ifelse(currentMoves[3] > 0, 3, 4)
-        currentTime <- currentTime + currentMoves[direction]
-        currentMoves <- currentMoves - currentMoves[direction]
-        waitingCars[direction] <- waitingCars[direction] - 1
-        print(c("left1", waitingCars))
-      }
-      
       # Updates waiting time with cars left
       waitTime <- waitTime + sum(waitingCars)
       
@@ -42,49 +31,67 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
       waitingCars[4] <- waitingCars[4] + rpois(1, distsE)
       print(c("step", step, waitingCars))
       
-      # Inits car entering a crossroad
-      Nvalue <- ifelse(waitingCars[1] > 0, rnorm(1, distEscape[1], distEscape[2]), 0)
-      Svalue <- ifelse(waitingCars[2] > 0, rnorm(1, distEscape[1], distEscape[2]), 0)
-      currentMoves <- roadVector(Nvalue, Svalue, 0, 0)
-      move <- min(currentMoves[currentMoves > 0])
-      direction <- which.min(currentMoves[currentMoves > 0])
-      
-      while (currentTime < 1) {
-        # TODO: Handle situation with no cars left
-        # TODO: Fix negative number of cars (may be connected)
+      while (currentTime < parameters[step + 1] && (waitingCars[1] || waitingCars[2])) {
+        # Updates current moves
+        print(c("moves1", currentMoves))
+        Nvalue <- ifelse(waitingCars[1] > 0 && currentMoves[1] <= 0, rnorm(1, distEscape[1], distEscape[2]), currentMoves[1])
+        Svalue <- ifelse(waitingCars[2] > 0 && currentMoves[2] <= 0, rnorm(1, distEscape[1], distEscape[2]), currentMoves[2])
+        currentMoves <- roadVector(Nvalue, Svalue, 0, 0)
+        move <- min(currentMoves[currentMoves > 0])
+        direction <- which(currentMoves == move)
+        
         # Handles current car's move
+        print(c("moves1", currentMoves))
+        currentTime <- currentTime + move
+        currentMoves <- currentMoves - move
+        waitingCars[direction] <- waitingCars[direction] - 1
+        print(c("left1", waitingCars))
+      }
+      
+      if (currentTime < parameters[step + 1]) {
+        currentTime = parameters[step + 1]
+        
+      } else if (currentMoves[1] || currentMoves[2]) {
+        
+        # Let's last N/S car leave the crossroad
+        direction <- ifelse(direction == 1, 2, 1)
         print(c("moves2", currentMoves))
         currentTime <- currentTime + move
         currentMoves <- currentMoves - move
         waitingCars[direction] <- waitingCars[direction] - 1
         print(c("left2", waitingCars))
+      }
+      
+      while (currentTime < 1 && (waitingCars[3] || waitingCars[4])) {
         
-        if (currentTime < parameters[step + 1]) {
-          
-          # Lets N/S car move
-          currentMoves[direction] <- ifelse(waitingCars[direction] > 0, rnorm(1, distEscape[1], distEscape[2]), 0)
-          move <- min(currentMoves[currentMoves > 0])
-          direction <- which.min(currentMoves[currentMoves > 0])
-          
-        } else {
-          if (currentMoves[1] > 0 || currentMoves[2] > 0) {
-            
-            # Lets last N/S car leave crossroad before switching lights
-            print(c("moves3", currentMoves))
-            direction <- ifelse (currentMoves[1] > 0, 1, 2)
-            currentTime <- currentTime + currentMoves[direction]
-            currentMoves <- currentMoves - currentMoves[direction]
-            waitingCars[direction] <- waitingCars[direction] - 1
-            print(c("left3", waitingCars))
-          }
-          
-          # Lets E/W car move
-          Wvalue <- ifelse(waitingCars[3] > 0, rnorm(1, distEscape[1], distEscape[2]), 0)
-          Evalue <- ifelse(waitingCars[4] > 0, rnorm(1, distEscape[1], distEscape[2]), 0)
-          currentMoves <- roadVector(0, 0, Wvalue, Evalue)
-          move <- min(currentMoves[currentMoves > 0])
-          direction <- which.min(currentMoves[currentMoves > 0])
-        }
+        # Updates current moves
+        print(c("moves3", currentMoves))
+        Wvalue <- ifelse(waitingCars[3] > 0 && currentMoves[3] <= 0, rnorm(1, distEscape[1], distEscape[2]), currentMoves[3])
+        Evalue <- ifelse(waitingCars[4] > 0 && currentMoves[4] <= 0, rnorm(1, distEscape[1], distEscape[2]), currentMoves[4])
+        currentMoves <- roadVector(0, 0, Wvalue, Evalue)
+        move <- min(currentMoves[currentMoves > 0])
+        direction <- which(currentMoves == move)
+        
+        # Handles current car's move
+        print(c("moves3", currentMoves))
+        currentTime <- currentTime + move
+        currentMoves <- currentMoves - move
+        waitingCars[direction] <- waitingCars[direction] - 1
+        print(c("left3", waitingCars))
+      }
+      
+      if (currentTime < 1) {
+        currentTime = 1
+        
+      } else if (currentMoves[3] || currentMoves[4]) {
+        
+        # Let's last W/E car leave the crossroad
+        direction <- ifelse(direction == 3, 4, 3)
+        print(c("moves4", currentMoves))
+        currentTime <- currentTime + move
+        currentMoves <- currentMoves - move
+        waitingCars[direction] <- waitingCars[direction] - 1
+        print(c("left4", waitingCars))
       }
       
       step <- step + 1
@@ -95,4 +102,3 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
 }
 
 simulate(rep(1/2, 24), 2, 2, 2, 2, c(0.3, 0.1))
-
