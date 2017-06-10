@@ -3,15 +3,118 @@ title: "Sygnalizacja świetlna"
 author: "Michał Błotniak & Adrianna Małkiewicz"
 date: "10.06.2017"
 output:
+  word_document: default
   pdf_document: default
   html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+```
+# Opis zagadnienia
+
+Celem projektu będzie rozwiązanie problemu optymalizacji działania sygnalizacji
+świetlnej na skrzyżowaniu. Dla podanych rozkładów losowych natężenia ruchu
+w ciągu dnia będzie poszukiwany sposób zmiany świateł, który spowoduje
+minimalizację sumarycznego czasu spędzonego na skrzyżowaniu.
+
+Będzie symulowany ruch samochodów w ciągu doby. Dla uproszczenia problemu
+zakładamy podział doby na n przedziałów. Skrzyżowanie składa się z 4 dróg, które
+zostały nazwane nazwami kierunków geograficznych (NESW). W każdym przedziale
+czasowym, z każdego kierunku, przyjeżdza losowa liczba samochodów zgodnie
+z określonym dla tego kierunku rozkładem prawdopodobieństwa. W zależności od
+pór dnia, opisanych w tablicy poniżej, będą wykorzystywane różne
+rozkłady Poissona z parametrami ustalonymi dla danej instancji problemu.
+W każdym z przedziałów będzie poszukiwany stosunek czasu światła zielonego
+w kierunku północ-południe (NS) do czasu przedziału.
+
+```{r, echo=FALSE, results='asis'}
+df <- data.frame('6 - 10', '10 - 15', '15 - 19', '19 - 6')
+colnames(df) <- c('Rano', 'W południe', 'Wieczorem', 'W nocy')
+kable(df, caption = 'Pory dnia z przedziałami czasowymi.')
 ```
 
-# Wyniki eksperymentów
+Samochód stojący bezpośrednio przed światłami może wjechać na skrzyżowanie
+jeśli ma zielone światło oraz na skrzyżowaniu nie przebywa obecnie samochód
+jadący z tego samego kierunku lub z kierunku prostopadłego. Po wjeździe na
+skrzyżowanie samochód przebywa na nim losową ilość czasu, zgodną z rozkładem
+normalnym o parametrach ustalonych dla danej instancji problemu. Samochody
+wjeżdżają kolejno na skrzyżowanie do momentu ich wyczerpania w w kolejce
+lub zmiany światła.
+
+# Przestrzeń przeszukiwania
+Przestrzenią przeszukiwań będzie przestrzeń $[0, 1]^n$, gdzie $n$ to liczba
+przedziałów czasowych, a każda z wartości od 0 do 1 oznacza stosunek czasu światła
+zielonego w kierunku NS do czasu przedziału.
+
+Jako że rozwiązania są punktami w n-wymiarowej przestrzeni, metryką będzie
+metryka euklidesowa (odległość między dwoma punktami):
+$$\delta(a, b) = \sqrt{\sum\limits_{i=1}^{n}(b_i - a_i)^2}$$
+
+Wszystkie wartości czasowe będą liczone w minutach i ich ułamkach.
+
+# Propozycja postaci funkcji celu
+Funkcja celu będzie sumarycznym czasem spędzonym na skrzyżowaniu przez wszystkie
+samochody w przeciągu całej doby. Czas ten będzie liczony poprzez odtworzenie
+symulacji dla danego punktu z przestrzeni problemu. Wartość funkcji będzie
+minimalizowana.
+
+**Przykład** Niech liczba przedziałów czasowych $n=3$, czas
+przejeżdżania samochodów $p=2h$, punkt przestrzeni stanów $x=(0.375, 0.625, 0.5)$
+oraz pojawianie się samochodów będzie określone tablicą poniżej.
+Dla uproszczenia w przykładzie jednostką przykładową będą godziny.
+
+```{r, echo=FALSE, results='asis'}
+df <- data.frame(c(2,1,1), c(1,2,2), c(1,1,3), c(2,2,1))
+colnames(df) <- c('N', 'E', 'S', 'W')
+rownames(df) <- c('$i=0, t=0$', '$i=1, t=8$', '$i=2, t=16$')
+kable(df, caption = 'Liczba samochodów przyjeżdżająca z danego kierunku w danej chwili.')
+```
+
+
+Wartość funkcji celu będzie liczona ze wzoru:
+$$f(x) = \sum\limits_{I} c_i * d_i $$
+
+gdzie I jest zbiorem przedziałów czasu o długości $d_i$, w których czeka pewne $c_i$
+samochodów.
+
+```{r, echo=FALSE, results='asis'}
+df <- data.frame(c(2, 4), c(2, 2), c(2, 1), c(2, 0), c(5, 4), c(2, 2), c(1, 0), c(1, 7), c(2, 5), c(2, 4), c(2, 2), c(1, 1))
+head <- c('$[0, 2]$', '$[2, 4]$', '$[4, 6]$', '$[6, 8]$', '$[8, 13]$', '$[13, 15]$', '$[15, 16]$', '$[16, 17]$', '$[17, 19]$', '$[19, 21]$', '$[21, 23]$', '$[23, 24]$')
+df <- rbind(head, df)
+rownames(df) <- c('$I_i$', '$d_i [h]$', '$c_i$')
+kable(df, caption = 'Zbiór przedziałów czasowych $I$ wraz z ich długością $d_i$ oraz liczbą czekających samochodów $c_i$, dla punktu $x=(0.375, 0.625, 0.5)$.', col.names = c())
+```
+
+W symulacji zostają wyliczone wartości dla punktu $x$ zapisane w tablicy powyżej.
+Wtedy wartość funkcji celu w punkcie $x$ będzie wynosić:
+$$f(x) = \sum\limits_{I} d_i * c_i = 4*2h + 3*2h + 1*2h + 0 + 4*5h + 2*2h + 0 + 7*1h + 5*2h + 4*2h + 2*2h + 1*1h = 70h $$
+
+# Przebieg eksperymentów
+Na początku zostały przyjęte intuicyjnie przykładowe wartości parametrów symulacji.
+```{r}
+trafficDists <- list(morning = c(2, 2, 1, 0.5), noon = c(0.5, 0.5, 0.2, 0.1), afternoon = c(2, 2, 0.8, 0.8), night = c(0.3, 0.2, 0.05, 0.1))
+```
+Powyższa lista zawiera wektory wartości oczekiwanych rozkładów natężenia ruch z każdego kierunku dla kolejnych pór dnia.
+
+
+Na początku został poddany analizie wpływ współczynnika `theta` połówkowego rozkładu normalnego, opisującego czas przejazdu przez skrzyżowanie.
+```{r}
+#thetas <- 1:20
+#results <- list()
+#for (theta in thetas) {
+#  print(theta)
+#  a <- replicate(1000, simulate(rep(1/2, 720), trafficDists = trafficDists, list(theta = theta)))
+#  results <- c(results, list(a))
+#}
+#mean <- results %>% sapply(mean)
+#sd <- results %>% sapply(sd)
+#df <- data.frame(theta = thetas, t =1/thetas * 120, mean = mean, sd = sd, x = sd/mean)
+#View(df)
+```
+
+
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
