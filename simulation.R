@@ -3,7 +3,6 @@ library(magrittr)
 
 roadVector <- function(N = 0, S = 0, W = 0 , E = 0) c(N = N, S = S,  W = W, E = E)
 
-#' TODO handle day phases
 simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
   if (parameters %>% length %>% mod(24) > 0) stop('parameters number must be dividable by 24')
   
@@ -26,12 +25,7 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
       waitTime <- waitTime + sum(waitingCars)
       
       # Simulate arriving cars
-      # TODO day phases vvvv
-      waitingCars[1] <- waitingCars[1] + rpois(1, distsN)
-      waitingCars[2] <- waitingCars[2] + rpois(1, distsS)
-      waitingCars[3] <- waitingCars[3] + rpois(1, distsW)
-      waitingCars[4] <- waitingCars[4] + rpois(1, distsE)
-      # TODO day phases ^^^^
+      waitingCars <- waitingCars + c(rpois(1, distsN[[phase]]), rpois(1, distsS[[phase]]), rpois(1, distsW[[phase]]), rpois(1, distsE[[phase]]))
       print(c("step", step, waitingCars))
       
       cycles <- list(c(1, 2), c(3, 4))
@@ -81,4 +75,5 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
   print(waitTime)
 }
 
-simulate(rep(1/2, 24), 2, 2, 2, 2, list(mean = 0.3, sd = 0.1))
+simulate(rep(1/2, 24), rep(2, 4), rep(2, 4), rep(2, 4), rep(2, 4), list(mean = 0.3, sd = 0.1))
+
