@@ -11,14 +11,14 @@ library(magrittr)
 #' @param mutationMean Mutation normal distribution mean parameter.
 #' @param mutationSd Mutation normal distribution standard deviation parameter.
 #' @param selectionMinProb Selection probability bias.
-#' @return TODO
+#' @return Best point in log.
 mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutationSd = mutationMean, selectionMinProb = 0.1) {
   P <- initPopulation(bounds, mu)
   hP <- sapply(P, heuristic)
   
-  best <- list(point = P[which.min(hP)], h = min(hP))
+  best <- list(point = P[[which.min(hP)]], h = min(hP))
   
-  for (t in 1:maxSteps) { # TODO end conditions
+  for (t in 1:maxSteps) {
     # for testing
     points(unlist(P), hP)
     invisible(readline(prompt="Press [enter] to continue"))
@@ -27,11 +27,12 @@ mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutation
     O <- mutate(R, bounds, mutationMean, mutationSd)
     hO <- sapply(O, heuristic)
     
-    msk <- select(c(P, O), c(hP, hO), mu, minProb = selectionMinProb)
+    msk <- succession(c(P, O), c(hP, hO), mu, minProb = selectionMinProb)
     P <- c(P, O)[msk]
     hP <- c(hP, hO)[msk]
+    if (min(hP) < best$h) best <- list(point = P[[which.min(hP)]], h = min(hP))
   }
-  P
+  best
 }
 
 initPopulation <- function(bounds, count) replicate(count, randomPoint(bounds), simplify = FALSE)
@@ -59,7 +60,7 @@ normalizeValue <- function(value, range) {
   mod(value - min, max - min) + min
 }
 
-select <- function(population, scores, count, minProb = 0) {
+succession <- function(population, scores, count, minProb = 0) {
   scores <- -scores # minimize
   normalizedScores <- scores - min(scores)
   sample(1:length(population), size = count, prob = normalizedScores + minProb * mean(normalizedScores))
