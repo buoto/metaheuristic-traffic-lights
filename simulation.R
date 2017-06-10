@@ -1,5 +1,6 @@
 library(stats)
 library(magrittr)
+library(fdrtool)
 
 roadVector <- function(N = 0, S = 0, W = 0 , E = 0) c(N = N, S = S,  W = W, E = E)
 
@@ -11,7 +12,6 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
   waitTime <- 0
   step <- 0
   phaseEnd <- 0
-  currentTime <- 1 # TODO merge with step?
   currentMoves <- roadVector()
   
   for (phase in 1:length(dayPhaseSteps)) {
@@ -19,8 +19,6 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
     print(c("phase", phase))
     
     while (step < phaseEnd) {
-      currentTime <- currentTime - 1
-      
       # Update waiting time with cars left
       waitTime <- waitTime + sum(waitingCars)
       
@@ -29,51 +27,47 @@ simulate <- function(parameters, distsN, distsS, distsW, distsE, distEscape) {
       print(c("step", step, waitingCars))
       
       cycles <- list(c(1, 2), c(3, 4))
-      cycleEnd <- parameters[step + 1]
+      cycleEnd <- floor(step) + parameters[floor(step) + 1]
       for (cc in cycles) {
-        while (currentTime < cycleEnd && any(waitingCars[cc] > 0)) {
+        while (step < cycleEnd && any(waitingCars[cc] > 0)) {
           # Update current moves
           print(c("moves1", currentMoves))
           
-          msk <- waitingCars[cc] > 0 & currentMoves[cc] <= 0
-          print(c("mask", msk))
-          currentMoves[cc][msk] <- rnorm(sum(msk), distEscape$mean, distEscape$sd)
+          startingDirections <- waitingCars[cc] > 0 & currentMoves[cc] <= step
+          currentMoves[cc][startingDirections] <- step + rhalfnorm(sum(startingDirections), distEscape$theta)
           
-          move <- min(currentMoves[currentMoves > 0])
-          direction <- currentMoves == move
+          waitTime <- (waitTime + (step %% 1)) * sum(startingDirections)
+          
+          step <- min(currentMoves[currentMoves > step])
+          direction <- currentMoves == step
           
           # Handle current car's move
           print(c("moves1", currentMoves))
-          currentTime <- currentTime + move
-          currentMoves <- currentMoves - move
           waitingCars[direction] <- waitingCars[direction] - 1
           print(c("left1", waitingCars))
         }
         
-        if (currentTime < cycleEnd) {
-          currentTime <- cycleEnd
+        if (step < cycleEnd) {
+          step <- cycleEnd
           
-        } else if (any(currentMoves > 0)) {
-          
+        } else if (any(currentMoves > step)) {
           # Let last car leave the crossroad
-          direction <- currentMoves > 0
+          direction <- currentMoves > step
           print(c("moves2", currentMoves))
-          move <- currentMoves[direction]
-          currentTime <- currentTime + move
-          currentMoves <- currentMoves - move
+          
+          step <- currentMoves[direction]
+          
           waitingCars[direction] <- waitingCars[direction] - 1
           print(c("left2", waitingCars))
         }
         
-        cycleEnd <- 1
+        cycleEnd <- floor(step + 1)
       }
-      
-      step <- step + 1
     }
   }
   
-  print(waitTime)
+  waitTime
 }
 
-simulate(rep(1/2, 24), rep(2, 4), rep(2, 4), rep(2, 4), rep(2, 4), list(mean = 0.3, sd = 0.1))
+simulate(rep(1/2, 24), rep(1, 4), rep(0, 4), rep(0, 4), rep(1, 4), list(theta = 5))
 
