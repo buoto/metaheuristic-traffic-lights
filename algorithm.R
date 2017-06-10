@@ -19,9 +19,10 @@ mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutation
   best <- list(point = P[[which.min(hP)]], h = min(hP))
   
   for (t in 1:maxSteps) {
+    print(t)
     # for testing
-    points(unlist(P), hP)
-    invisible(readline(prompt="Press [enter] to continue"))
+    #points(unlist(P), hP)
+    #invisible(readline(prompt="Press [enter] to continue"))
     
     R <- reproduce(P)
     O <- mutate(R, bounds, mutationMean, mutationSd)

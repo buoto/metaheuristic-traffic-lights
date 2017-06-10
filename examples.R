@@ -17,10 +17,24 @@ simulate(rep(1/2, 24), rep(1, 4), rep(0, 4), rep(0, 4), rep(1, 4), list(theta = 
 
 a <- replicate(100, simulate(rep(1/2, 24), list(c(1, 0, 0, 1), c(1, 0, 0, 1), c(1, 0, 0, 1), c(1, 0, 0, 1)), list(theta = 5)))
 
-results <- c()
-for (i in 1:10) {
-  a <- replicate(100, simulate(rep(1/2, 720),
+thetas <- 1:20
+results <- list()
+for (theta in thetas) {
+  print(theta)
+  a <- replicate(1000, simulate(rep(1/2, 720),
                                list(morning = c(2, 2, 1, 0.5), noon = c(0.5, 0.5, 0.2, 0.1), afternoon = c(2, 2, 0.8, 0.8), night = c(0.3, 0.2, 0.05, 0.1)),
-                               list(theta = i)))
-  results <- c(results, list(mean = mean(a), sd = sd(a)))
+                               list(theta = theta)))
+  results <- c(results, list(a))
 }
+mean <- results %>% sapply(mean)
+sd <- results %>% sapply(sd)
+df <- data.frame(theta = thetas, t =1/thetas * 120, mean = mean, sd = sd, x = sd/mean)
+View(df)
+
+
+h <- function (parameters) simulate(parameters,
+         list(morning = c(2, 2, 1, 0.5), noon = c(0.5, 0.5, 0.2, 0.1), afternoon = c(2, 2, 0.8, 0.8), night = c(0.3, 0.2, 0.05, 0.1)),
+         list(theta = 15))
+solution <- mea(replicate(720, c(0, 1), simplify = FALSE), 20, h, maxSteps = 1000)
+ref <- h(rep(.5, 720))
+
