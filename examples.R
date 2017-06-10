@@ -31,10 +31,20 @@ sd <- results %>% sapply(sd)
 df <- data.frame(theta = thetas, t =1/thetas * 120, mean = mean, sd = sd, x = sd/mean)
 View(df)
 
+ref <- rep(.5, 720)
 
-h <- function (parameters) simulate(parameters,
+# very low max(dist)/theta ratio - losing!
+h.low <- function (parameters) simulate(parameters,
          list(morning = c(2, 2, 1, 0.5), noon = c(0.5, 0.5, 0.2, 0.1), afternoon = c(2, 2, 0.8, 0.8), night = c(0.3, 0.2, 0.05, 0.1)),
          list(theta = 15))
-solution <- mea(replicate(720, c(0, 1), simplify = FALSE), 10, h, maxSteps = 1000, mutationMean = 0.01)
-ref <- h(rep(.5, 720))
+solution.low <- mea(replicate(720, c(0, 1), simplify = FALSE), 10, h, maxSteps = 1000, mutationMean = 0.01)
+soln.low <- replicate(100, h.low(solution.low$point))
+refn.low <- replicate(100, h.low(ref))
 
+# max(dist)/theta ~ 1 - winning
+h.1 <- function (parameters) simulate(parameters,
+         list(morning = c(2, 3, 1, 0.5), noon = c(0.5, 0.5, 0.2, 0.1), afternoon = c(4, 5, 2, 1), night = c(0.3, 0.2, 0.05, 0.1)),
+         list(theta = 4))
+refn.1 <- replicate(100, h.1(ref))
+solution.1 <- mea(replicate(720, c(0, 1), simplify = FALSE), 10, h.1, maxSteps = 100, mutationMean = 0.01)
+soln.1 <- replicate(100, h.1(solution.1$point))
