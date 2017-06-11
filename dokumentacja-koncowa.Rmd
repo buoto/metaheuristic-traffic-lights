@@ -46,9 +46,32 @@ Dodatkowo w trakcie każdego cyklu świateł sumowany jest czas przebywania samo
 przyjazdu, do czasu ruszenia ze skrzyżowania. W ten sposób określana jest jakość przekazanego jako argument punktu
 przestrzeni problemu.
 
-## Metaheurystyka
-Podczas eksperymentów dostrajane były parametry ...
-# TODO
+## Metoda optymalizacji
+Zaimplementowany algorytm został zmodyfikowany względem tego opisanego w koncepcji. Główną różnicą jest dobór osobników
+do krzyżowania. W obecnej wersji z populacji wybierane są pary zgodnie z opisanymi wcześniej regułami selekcji
+proporcjonalnej. Dodatkowo wykorzystywana jest sukcesja generacyjna - potomstwo w pełni zastępuje pokolenie rodziców.
+Zmiany były podyktowane kwestiami wydajnościowymi. Wykorzystywane wcześniej krzyżowanie każdy z każdym wymagało
+wielokrotnego uruchamiania symulacji dla potomstwa bardzo niskiej jakości.
+
+W trakcie działania algorytmu zapisywany jest najlepszy osobnik ze wszystkich pokoleń. Osobnik ten jest zwracany
+po osiągnięciu limitu pokoleń `maxSteps`. 
+
+Zaimplementowany algorytm minimalizuje funkcję celu.
+
+### Opis argumentów
+- `heuristic` - funkcja przyjmująca `n` wymiarowy punkt przestrzeni rozwiązania i zwracająca jego ocenę,
+- `min` - kres dolny przestrzeni rozwiązań,
+- `max` - kres górny przestrzeni rozwiązań,
+- `mu` - liczba osobników w populacji,
+- `maxSteps` - liczba generowanych pokoleń,
+- `mutationMean` - wartość średnia rozkładu mutacji,
+- `mutationSd` - odchylenie standardowe rozkładu mutacji,
+- `selectionMinProb` - minimalne prawdopodobieństwo selekcji proporcjonalnej.
+
+Podczas eksperymentów dostrajane były parametry `mu`, `maxSteps`, `mutationMean`, `mutationSd` i `selectionMinProb`.
+Argumenty `mu` i `maxSteps` wpływają na działanie algorytmu w podobny sposób - wraz z ich zwiększeniem algorytm
+szybciej znajduje minimum lokalne, natomiast duża wartość `mutationMean`, `mutationSd` oraz `selectionMinProb` pozwala
+algorytmowi na opuszczenie minimum lokalnego wspomagając eksplorację.
 
 # Przebieg eksperymentów
 Na początku zostały przyjęte intuicyjnie przykładowe wartości parametrów symulacji.
@@ -93,7 +116,7 @@ for (theta in thetas) {
 
 m <- results %>% sapply(mean)
 s <- results %>% sapply(sd)
-df <- data.frame(theta = thetas, t =1/thetas * 120, mean = m, sd = s, cv = s/m)
+df <- data.frame(theta = thetas, t = 1/thetas * 120, mean = m, sd = s, cv = s/m)
 kable(df, col.names = c('$\\theta$', '$t$', '$\\mu_a$', '$\\sigma_a$', '$c_v$'),
       caption = paste('Wyniki pomiarów dla ', reps, ' powtórzeń z różnymi wartościami $\\theta$.'))
 ```
@@ -122,7 +145,7 @@ h.1 <- function(parameters) simulate(parameters,
          list(morning = c(2, 3, 1, 0.5), noon = c(0.5, 0.5, 0.2, 0.1), afternoon = c(4, 5, 2, 1), night = c(0.3, 0.2, 0.05, 0.1)),
          list(theta = 4))
 refn.1 <- replicate(reps, h.1(ref))
-solution.1 <- mea(replicate(720, c(0, 1), simplify = FALSE), 10, h.1, maxSteps = 100, mutationMean = 0.01)
+solution.1 <- mea(h.1, min = rep(0, 720), max = rep(1, 720), 10, maxSteps = 100, mutationMean = 0.01)
 soln.1 <- replicate(reps, h.1(solution.1$point))
 
 df <- data.frame(mean = c(mean(soln.1), mean(refn.1)), sd = c(sd(soln.1), sd(refn.1)))
