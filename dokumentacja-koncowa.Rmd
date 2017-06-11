@@ -69,9 +69,12 @@ Zaimplementowany algorytm minimalizuje funkcję celu.
 - `selectionMinProb` - minimalne prawdopodobieństwo selekcji proporcjonalnej.
 
 Podczas eksperymentów dostrajane były parametry `mu`, `maxSteps`, `mutationMean`, `mutationSd` i `selectionMinProb`.
-Argumenty `mu` i `maxSteps` wpływają na działanie algorytmu w podobny sposób - wraz z ich zwiększeniem algorytm
-szybciej znajduje minimum lokalne, natomiast duża wartość `mutationMean`, `mutationSd` oraz `selectionMinProb` pozwala
-algorytmowi na opuszczenie minimum lokalnego wspomagając eksplorację.
+Argumenty `mu` i `maxSteps` wpływają na działanie algorytmu w podobny sposób - wraz z ich zwiększeniem algorytm znajduje
+lepsze rozwiązania kosztem wydłużenia czasu obliczeń. Symulacje będą przeprowadzane z ustalonym stosunkiem wartości
+`maxSteps = 10000/mu`. Odpowiednio duże wartości parametrów `mutationMean`, `mutationSd`
+oraz `selectionMinProb` pozwalają algorytmowi na opuszczenie minimum lokalnego wspomagając eksplorację.
+Jednakże zbyt duże zwiększenie tych argumentów pogorsza jakość znajdowanych optimów, dlatego też te parametry będą
+strojone.
 
 # Przebieg eksperymentów
 Na początku zostały przyjęte przykładowe wartości parametrów symulacji, bazując na średniej przepustowości polskich dróg
@@ -99,6 +102,18 @@ theta <- 15
 h <- function(point) simulate(point, trafficDists = trafficDists, list(theta = theta)) 
 ```
 
+Z uwagi na niedeterminizm symulacji wszyskie pomiary jakości wynikowych punktów będą powtarzane `reps` razy.
+```{r reps}
+reps <- 2
+```
+
+
+Przestrzeń przeszukiwań jest ograniczona wektorami:
+```{r min max, echo=TRUE}
+minPoint <- rep(0, 720)
+maxPoint <- rep(1, 720)
+```
+
 Dodatkowo przyjęte zostały punkty referencyjne ze stałą proporcją podziału cyklu świateł ustaloną a priori
 ($1/2$, $2/3$ i $3/4$ czasu dla kierunku N/S):
 
@@ -106,27 +121,50 @@ Dodatkowo przyjęte zostały punkty referencyjne ze stałą proporcją podziału
 ref.1.2 <- rep(1/2, 720)
 ref.2.3 <- rep(2/3, 720)
 ref.3.4 <- rep(3/4, 720)
+
+ref.1.2.results <- replicate(reps, h(ref.1.2))
+ref.2.3.results <- replicate(reps, h(ref.2.3))
+ref.3.4.results <- replicate(reps, h(ref.3.4))
+```
+
+Poniżej prezentowane jest zestawienie wyników otrzymywanych w symulacjach dla punktów referencyjnych.
+```{r rep boxplot}
+boxplot(list('h(ref.1.2)' = ref.1.2.results,
+             'h(ref.2.3)' = ref.2.3.results,
+             'h(ref.3.4)' = ref.3.4.results))
 ```
 
 ## Analiza działania algorytmu
 
-```{r run algorithm, warning=FALSE}
-h.1 <- function(parameters) simulate(parameters,
-         list(morning = c(2, 3, 1, 0.5),
-              noon = c(0.5, 0.5, 0.2, 0.1),
-              afternoon = c(4, 5, 2, 1),
-              night = c(0.3, 0.2, 0.05, 0.1)),
-         list(theta = 4))
-refn.1 <- replicate(reps, h.1(ref))
-solution.1 <- mea(h.1,
-                  min = rep(0, 720),
-                  max = rep(1, 720),
-                  mu = 10,
-                  maxSteps = 100,
-                  mutationMean = 0.01)
-soln.1 <- replicate(reps, h.1(solution.1$point))
+### Strojenie wartości `mu` i `maxSteps`
+Dla ustalonych:
+```{r init vars}
+mutationMean <- 0.1
+mutationSd <- 0.1
+selectionMinProb <- 0
+```
 
-df <- data.frame(mean = c(mean(soln.1), mean(refn.1)), sd = c(sd(soln.1), sd(refn.1)))
+
+```{r run algorithm, warning=FALSE}
+mus <- c(10, 100, 1000)
+results <- list()
+
+for (mu in mus) {
+  message(mu)
+  maxSteps <- 10000/mu
+  sol <- mea(h,
+             min = minPoint,
+             max = maxPoint,
+             mu = mu,
+             maxSteps = maxSteps,
+             mutationMean = mutationMean,
+             mutationSd = mutationSd,
+             selectionMinProb = selectionMinProb)
+  results <- c(results, list(sol))
+}
+
+
+df <- data.frame(mu = mus, maxSteps = 10000/mus, mean = sapply(results, mean), sd = sapply(results, sd))
 ```
 ```{r run algo table, echo=FALSE}
 rownames(df) <- c('Najlepszy algorytmu', 'Punkt referencyjny')
