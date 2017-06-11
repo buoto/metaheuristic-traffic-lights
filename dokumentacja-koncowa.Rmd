@@ -89,5 +89,24 @@ Wynika stąd, że algorytm będzie miał przewagę dla wartości $\theta$ bliski
 
 ## Analiza działania algorytmu
 
+```{r}
+h.1 <- function (parameters) simulate(parameters,
+         list(morning = c(2, 3, 1, 0.5), noon = c(0.5, 0.5, 0.2, 0.1), afternoon = c(4, 5, 2, 1), night = c(0.3, 0.2, 0.05, 0.1)),
+         list(theta = 4))
+refn.1 <- replicate(reps, h.1(ref))
+solution.1 <- mea(replicate(720, c(0, 1), simplify = FALSE), 10, h.1, maxSteps = 100, mutationMean = 0.01)
+soln.1 <- replicate(reps, h.1(solution.1$point))
+
+df <- data.frame(mean = c(mean(soln.1), mean(refn.1)), sd = c(sd(soln.1), sd(refn.1)))
+rownames(df) <- c('Najlepszy algorytmu', 'Punkt referencyjny')
+kable(df,
+      col.names = c('$\\mu_a$', '$\\sigma$'),
+      caption = paste('Wyniki pomiarów dla ', reps, ' powtórzeń z różnymi wartościami $\\theta$.'))
+
+boxplot(list(algorytm = soln.1, ref = refn.1))
+#text('Rozkłady wartości wyników symulacji dla najlepszego punktu otrzymanego przez algorytm i punktu referencyjnego.')
+```
+
+
 
 
