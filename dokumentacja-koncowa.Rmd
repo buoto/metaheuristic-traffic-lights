@@ -3,10 +3,16 @@ title: "Sygnalizacja świetlna"
 author: "Michał Błotniak & Adrianna Małkiewicz"
 date: "10.06.2017"
 output:
+  html_document: default
   pdf_document: default
   word_document: default
-  html_document: default
 ---
+
+```{r setup}
+library(knitr)
+source('algorithm.R')
+source('simulation.R')
+```
 
 # Realizacja
 Celem  projektu  było  rozwiązanie  problemu  optymalizacji  działania  sygnalizacji  świetlnej na skrzyżowaniu.
@@ -30,7 +36,7 @@ Podczas eksperymentów dostrajane były parametry ... # TODO
 # Przebieg eksperymentów
 Na początku zostały przyjęte intuicyjnie przykładowe wartości parametrów symulacji.
 
-```{r}
+```{r init traffic}
 trafficDists <- list(morning = c(2, 2, 1, 0.5),
                      noon = c(0.5, 0.5, 0.2, 0.1),
                      afternoon = c(2, 2, 0.8, 0.8),
@@ -38,41 +44,50 @@ trafficDists <- list(morning = c(2, 2, 1, 0.5),
 ```
 
 Powyższa lista zawiera wektory wartości oczekiwanych rozkładów natężenia ruchu: z każdego kierunku i dla kolejnych pór dnia.
-
-Na początku został poddany analizie wpływ współczynnika `theta` połówkowego rozkładu normalnego, opisującego czas przejazdu przez skrzyżowanie.
-
-```{r}
-#thetas <- 1:20
-#results <- list()
-#for (theta in thetas) {
-#  print(theta)
-#  a <- replicate(1000, simulate(rep(1/2, 720), trafficDists = trafficDists, list(theta = theta)))
-#  results <- c(results, list(a))
-#}
-#mean <- results %>% sapply(mean)
-#sd <- results %>% sapply(sd)
-#df <- data.frame(theta = thetas, t =1/thetas * 120, mean = mean, sd = sd, x = sd/mean)
-#View(df)
+W eksperymentach przyjęty został podział doby na 720 kawałków, po 2 minuty w trakcie których każdorazowo dokonywana jest zmiana świateł.
+Dodatkowo wykorzystywany jest punkt referencyjny `ref`, reprezentujący strategię, w której zmiana świateł następuje co minutę:
+```{r init rep}
+ref <- rep(1/2, 720)
 ```
 
+## Dobór współczynnika theta
 
+Dokonany został poddany analizie wpływ współczynnika `theta` połówkowego rozkładu normalnego, opisującego czas przejazdu przez skrzyżowanie. Współczynnik
+ten ma wprost przełożenie na wartość średnią ilości samochodów przejeżdżających przez skrzyżowanie w trakcie jednego kwantu czasu (2 minuty), co wynika
+z charakterystyki połówkowego rozkładu normalnego.
 
+Poniżej znajduje się tabela z wynikami pomiarów dla wartości $\theta$ z przedziału od 1 do 20. Model zwraca wyniki w kwantach czasowych równych 2 minuty.
 
+```{r theta}
+reps <- 2 # TODO more on prod
+thetas <- seq(1, 20, length = 20)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+results <- list()
+for (theta in thetas) {
+  a <- replicate(reps, simulate(ref, trafficDists = trafficDists, list(theta = theta)))
+  results <- c(results, list(a))
+}
+m <- results %>% sapply(mean)
+s <- results %>% sapply(sd)
+df <- data.frame(theta = thetas, t =1/thetas * 120, mean = m, sd = s, cv = s/m)
+kable(df, col.names = c('$\\theta$', '$t$', '$\\mu_a$', '$\\sigma_a$', '$c_v$'),
+      caption = paste('Wyniki pomiarów dla ', reps, ' powtórzeń z różnymi wartościami $\\theta$.'))
 ```
 
-## Including Plots
+### Wnioski
 
-You can also embed plots, for example:
+Z powyższych danych wynika, że współczynnik zmienności wartości zwracanych przez model $c_v$ maleje wraz ze wzrostem $\theta$,
+a od pewnego momentu utrzymuje się na stałym poziomie. Dodatkowo uśrednione wartości zwracane przez model $\mu_a$ spadają do
+$300$ kwantów czasu.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+Oznacza to, że wszystkie samochody czekały łącznie mniej niż połowę doby. Jest to niepożadane zjawisko
+spowodowane zbyt dużą wartością współczynnika $\theta$ (znacznie większą niż największa wartość oczekiwana natężenia ruchu, która była równa 2).
+W takiej sytuacji samochody przejeżdżają tak szybko w stosunku do ich przybywania, że optymalną strategią jest przełączanie świateł w proporcjach 
+$1:1$ będąca punktem referencyjnym `ref`.
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Wynika stąd, że algorytm będzie miał przewagę dla wartości $\theta$ bliskich `max(trafficDists)` oraz mniejszych od tej wartości.
+
+## Analiza działania algorytmu
+
+
+
