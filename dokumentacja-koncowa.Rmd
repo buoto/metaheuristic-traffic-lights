@@ -8,8 +8,8 @@ output:
   word_document: default
 ---
 
-# TODO hide this
-```{r setup}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
 library(knitr)
 source('algorithm.R')
 source('simulation.R')
@@ -42,15 +42,15 @@ Podczas eksperymentów dostrajane były parametry ...
 Na początku zostały przyjęte intuicyjnie przykładowe wartości parametrów symulacji.
 
 ```{r init traffic}
-trafficDists <- list(morning = c(2, 2, 1, 0.5),
-                     noon = c(0.5, 0.5, 0.2, 0.1),
-                     afternoon = c(2, 2, 0.8, 0.8),
-                     night = c(0.3, 0.2, 0.05, 0.1))
+trafficDists <- list(morning = c(16, 15, 4, 7),
+                     noon = c(8, 9, 12, 3),
+                     afternoon = c(15, 16, 6, 6),
+                     night = c(3, 2, 0.5, 1))
 ```
 
-Powyższa lista zawiera wektory wartości oczekiwanych rozkładów natężenia ruchu: z każdego kierunku i dla kolejnych pór
-dnia. W eksperymentach został przyjęty podział doby na 720 kawałków (po 2 minuty), w trakcie których każdorazowo
-dokonywana jest zmiana świateł.
+Powyższa lista zawiera wektory wartości oczekiwanych rozkładów natężenia ruchu (liczba samochodów przyjeżdżających
+w kwancie czasu): z każdego kierunku i dla kolejnych pór dnia. W eksperymentach został przyjęty podział doby
+na 720 kawałków (po 2 minuty), w trakcie których każdorazowo dokonywana jest zmiana świateł.
 
 Dodatkowo, wykorzystywany jest punkt referencyjny `ref`, reprezentujący strategię, w której zmiana świateł następuje co
 minutę (po równo dla obu stron skrzyżowania):
@@ -71,7 +71,7 @@ kwantach czasowych równych 2 minuty.
 # TODO remove unnecessary part
 ```{r theta}
 reps <- 2 # TODO more on prod
-thetas <- seq(1, 20, length = 20)
+thetas <- seq(1, 60, length = 20)
 
 results <- list()
 for (theta in thetas) {
@@ -90,11 +90,11 @@ kable(df, col.names = c('$\\theta$', '$t$', '$\\mu_a$', '$\\sigma_a$', '$c_v$'),
 
 Z powyższych danych wynika, że współczynnik zmienności wartości zwracanych przez model $c_v$ maleje wraz ze wzrostem
 $\theta$, a od pewnego momentu utrzymuje się na stałym poziomie. Dodatkowo uśrednione wartości zwracane przez model
-$\mu_a$ spadają do $300$ kwantów czasu.
+$\mu_a$ spadają do $4300$ kwantów czasu.
 
 Oznacza to, że wszystkie samochody czekały łącznie mniej niż połowę doby. Jest to niepożądane zjawisko, spowodowane zbyt
 dużą wartością współczynnika $\theta$ (znacznie większą niż największa wartość oczekiwana natężenia ruchu, która była
-równa 2). W takiej sytuacji samochody przejeżdżają tak szybko w stosunku do ich przybywania, że optymalną strategią jest
+równa 16). W takiej sytuacji samochody przejeżdżają tak szybko w stosunku do ich przybywania, że optymalną strategią jest
 przełączanie świateł w proporcjach $1:1$ charakteryzjących punkt referencyjny `ref`.
 
 Wynika stąd, że algorytm będzie miał przewagę dla wartości $\theta$ bliskich `max(trafficDists)` oraz mniejszych od tej
@@ -103,7 +103,7 @@ wartości.
 ## Analiza działania algorytmu
 
 # TODO hide unnecessary part
-```{r}
+```{r, eval=FALSE, include=FALSE}
 h.1 <- function (parameters) simulate(parameters,
          list(morning = c(2, 3, 1, 0.5), noon = c(0.5, 0.5, 0.2, 0.1), afternoon = c(4, 5, 2, 1), night = c(0.3, 0.2, 0.05, 0.1)),
          list(theta = 4))
