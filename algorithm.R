@@ -4,16 +4,18 @@ library(magrittr)
 
 #' Mutation evolutionary algorithm.
 #' 
-#' @param bounds List of ranges for every dimension.
-#' @param mu Parent population count.
 #' @param heuristic Optimized function - must accept a list of points and return list of heuristic scores.
+#' @param min Explored space lower bound.
+#' @param max Explored space upper bound.
+#' @param mu Parent population count.
 #' @param maxSteps steps 
 #' @param mutationMean Mutation normal distribution mean parameter.
 #' @param mutationSd Mutation normal distribution standard deviation parameter.
 #' @param selectionMinProb Selection probability bias.
 #' @return Best point in log.
-mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutationSd = mutationMean, selectionMinProb = 0.1) {
-  P <- initPopulation(bounds, mu)
+mea <- function(heuristic, min, max, mu, maxSteps = 10, mutationMean = 1, mutationSd = mutationMean, selectionMinProb = 0.1) {
+  if (any(max < min)) stop('All values in min must be lower than corresponding max values.') 
+  P <- initPopulation(min, max, mu)
   hP <- sapply(P, heuristic)
   
   best <- list(point = P[[which.min(hP)]], h = min(hP))
@@ -26,7 +28,7 @@ mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutation
     #invisible(readline(prompt = "Press [enter] to continue"))
     R <- reproduce(P, hP, mu, selectionMinProb)
     
-    O <- mutate(R, bounds, mutationMean, mutationSd)
+    O <- mutate(R, min, max, mutationMean, mutationSd)
     hO <- sapply(O, heuristic)
     
     if (min(hO) < best$h) {
@@ -41,9 +43,7 @@ mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutation
   best
 }
 
-initPopulation <- function(bounds, count) replicate(count, randomPoint(bounds), simplify = FALSE)
-
-randomPoint <- function(bounds) sapply(bounds, function(range) runif(1, min = range[1], max = range[2]))
+initPopulation <- function(min, max, count) replicate(count, runif(length(min), min = min, max = max), simplify = FALSE)
 
 reproduce <- function(population, scores, lambda, minProb) {
   R <- list()
@@ -59,20 +59,12 @@ crossover <- function(pair) {
   pair[[1]] * ratio + pair[[2]] * (1 - ratio)
 }
 
-mutate <- function(population, bounds, mean, sd) {
-  lapply(population, function(point) (point + rnorm(length(point), mean = mean, sd = sd)) %>% normalize(bounds))
+mutate <- function(population, min, max, mean, sd) {
+  lapply(population, function(point) (point + rnorm(length(point), mean = mean, sd = sd)) %>% normalize(min, max))
 }
 
-normalize <- function(point, bounds) {
-  apply(rbind(point, bounds), 2, function(pair) normalizeValue(pair[[1]], unlist(pair[[2]])))
-}
+normalize <- function(point, min, max) mod(point - min, max - min) + min
   
-normalizeValue <- function(value, range) {
-  min <- range[[1]]
-  max <- range[[2]]
-  mod(value - min, max - min) + min
-}
-
 select <- function(population, scores, count, minProb = 0) {
   scores <- -scores # minimize
   normalizedScores <- scores - min(scores)
