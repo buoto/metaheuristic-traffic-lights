@@ -23,12 +23,11 @@ doprecyzowane kwestie.
 
 W zadaniu nie była brana pod uwagę przepustowość (liczba samochodów, którym udało się w ciągu całej doby przejechać).
 Za wartość minimalizowaną została przyjęta suma czasów oczekiwania samochodów na wjazd na skrzyżowanie, ponieważ tak
-było zdefiniowane przydzielone zadanie. Co więcej, wartości te są od siebie zależne, więc nie zmienia to zachowania
-zaimplementowanego algorytmu.
+było zdefiniowane przydzielone zadanie. Co więcej, wartości te są od siebie zależne, więc w obu przypadkach
+zaimplementowany algorytm zachowywałby się tak samo.
 
 Pojęcie jednej instancji problemu zostało przedefiniowane na pojedynczy przebieg symulacji dla podanych parametrów
-rozkładów. Z tego wynika, że funkcja celu jest niedeterministyczna. Pomiar jakości otrzymanego punktu będzie zatem
-wymagał wielokrotnego obliczenia funkcji celu.
+rozkładów. Z tego wynika, że funkcja celu jest niedeterministyczna.
 
 ## Symulacja (_simulation.R_)
 Zadaniem tego modułu było zasymulowanie ruchu samochodów na skrzyżowaniu dla podanych czasów zmiany świateł oraz
@@ -64,21 +63,22 @@ Zaimplementowany algorytm minimalizuje funkcję celu.
 - `max` - kres górny przestrzeni rozwiązań,
 - `mu` - liczba osobników w populacji,
 - `maxSteps` - liczba generowanych pokoleń,
-- `mutationMean` - wartość średnia rozkładu mutacji,
-- `mutationSd` - odchylenie standardowe rozkładu mutacji,
-- `selectionMinProb` - minimalne prawdopodobieństwo selekcji proporcjonalnej.
+- `mutationMean` - wartość średnia rozkładu mutacji.
 
-Podczas eksperymentów dostrajane były parametry `mu`, `maxSteps`, `mutationMean`, `mutationSd` i `selectionMinProb`.
+Podczas eksperymentów dostrajane były parametry `mu`, `maxSteps`, `mutationMean`, `mutationSd`.
+
 Argumenty `mu` i `maxSteps` wpływają na działanie algorytmu w podobny sposób - wraz z ich zwiększeniem algorytm znajduje
-lepsze rozwiązania kosztem wydłużenia czasu obliczeń. Symulacje będą przeprowadzane z ustalonym stosunkiem wartości
-`maxSteps = 10000/mu`. Odpowiednio duże wartości parametrów `mutationMean`, `mutationSd`
-oraz `selectionMinProb` pozwalają algorytmowi na opuszczenie minimum lokalnego wspomagając eksplorację.
-Jednakże zbyt duże zwiększenie tych argumentów pogorsza jakość znajdowanych optimów, dlatego też te parametry będą
-strojone.
+lepsze rozwiązania kosztem wydłużenia czasu obliczeń. Strojenie tych parametrów będzie przeprowadzane z ustalonym
+stosunkiem wartości `maxSteps = 5000/mu`.
+
+Odpowiednio duże wartości parametrów `mutationMean`, `mutationSd` pozwalają algorytmowi na opuszczenie minimum lokalnego
+wspomagając eksplorację. Jednakże zbyt duże zwiększenie tych argumentów pogorsza jakość znajdowanych optimów. Strojenie
+będzie polegało na sprawdzeniu, jakie wartości poprawiają działanie algorytmu przy założeniu $mutationMean = mutationSd$
 
 # Przebieg eksperymentów
-Na początku zostały przyjęte przykładowe wartości parametrów symulacji, bazując na średniej przepustowości polskich dróg
-z [Generalnego Pomiaru Ruchu GDDKiA](https://www.gddkia.gov.pl/userfiles/articles/g/generalny-pomiar-ruchu-w-2015_15598//SYNTEZA/Synteza_GPR2015.pdf)
+W eksperymentach został przyjęty podział doby na 720 kawałków (po 2 minuty), w trakcie których każdorazowo wykonywany
+jest pełen cykl zmiany świateł. Zostały również przyjęte przykładowe wartości parametrów symulacji, bazując na średniej
+przepustowości polskich dróg z [Generalnego Pomiaru Ruchu GDDKiA](https://www.gddkia.gov.pl/userfiles/articles/g/generalny-pomiar-ruchu-w-2015_15598//SYNTEZA/Synteza_GPR2015.pdf)
 (średni ruch = $11178 poj./24~godz. \approx 15 poj./2~min.$). Modelowana jest sytuacja, gdy trasa N/S ma większą
 przepustowość niż trasa W/E.
 
@@ -90,41 +90,43 @@ trafficDists <- list(morning = c(20, 17, 6, 9),
 ```
 
 Powyższa lista zawiera wektory wartości oczekiwanych rozkładów natężenia ruchu (liczba samochodów przyjeżdżających
-w kwancie czasu): z każdego kierunku i dla kolejnych pór dnia. W eksperymentach został przyjęty podział doby
-na 720 kawałków (po 2 minuty), w trakcie których każdorazowo wykonywany jest pełen cykl zmiany świateł.
+w kwancie czasu) z każdego kierunku i dla kolejnych pór dnia.
 
 Przyjęty został także średni czas zjeżdżania ze skrzyżowania równy $8s$. Wartość oczekiwana połówkowego rozkładu
 normalnego wynosi $1/\theta$, zatem współczynnik $\theta$ jest równy $\theta = \frac{2~min.}{8~s} = 15$
 
 ```{r init heur}
 theta <- 15
-
 h <- function(point) simulate(point, trafficDists = trafficDists, list(theta = theta)) 
 ```
 
-Z uwagi na niedeterminizm symulacji wszyskie pomiary jakości wynikowych punktów będą powtarzane `reps` razy.
-```{r reps}
-reps <- 2
+Z uwagi na niedeterminizm działania algorytmu, będzie on powtarzany `iter` razy .
+```{r iter}
+iter <- 10
 ```
 
+Liczba przedziałów `n` na potrzeby strojenia algorytmu zostaje zmniejszona do 120:
+```{r n}
+n <- 72
+```
 
 Przestrzeń przeszukiwań jest ograniczona wektorami:
 ```{r min max, echo=TRUE}
-minPoint <- rep(0, 720)
-maxPoint <- rep(1, 720)
+minPoint <- rep(0, n)
+maxPoint <- rep(1, n)
 ```
 
 Dodatkowo przyjęte zostały punkty referencyjne ze stałą proporcją podziału cyklu świateł ustaloną a priori
 ($1/2$, $2/3$ i $3/4$ czasu dla kierunku N/S):
 
 ```{r init rep}
-ref.1.2 <- rep(1/2, 720)
-ref.2.3 <- rep(2/3, 720)
-ref.3.4 <- rep(3/4, 720)
+ref.1.2 <- rep(1/2, n)
+ref.2.3 <- rep(2/3, n)
+ref.3.4 <- rep(3/4, n)
 
-ref.1.2.results <- replicate(reps, h(ref.1.2))
-ref.2.3.results <- replicate(reps, h(ref.2.3))
-ref.3.4.results <- replicate(reps, h(ref.3.4))
+ref.1.2.results <- replicate(iter, h(ref.1.2))
+ref.2.3.results <- replicate(iter, h(ref.2.3))
+ref.3.4.results <- replicate(iter, h(ref.3.4))
 ```
 
 Poniżej prezentowane jest zestawienie wyników otrzymywanych w symulacjach dla punktów referencyjnych.
@@ -138,40 +140,141 @@ boxplot(list('h(ref.1.2)' = ref.1.2.results,
 
 ### Strojenie wartości `mu` i `maxSteps`
 Dla ustalonych:
-```{r init vars}
+
+```{r init mutation}
 mutationMean <- 0.1
 mutationSd <- 0.1
-selectionMinProb <- 0
 ```
 
+Poniższy eksperyment ma na celu rozstrzygnięcie jaki stosunek $\\mu$ do `maxSteps` daje najlepszy wynik działania
+algorytmiu.
 
-```{r run algorithm, warning=FALSE}
-mus <- c(10, 100, 1000)
+```{r run algorithm}
+mus <- c(5, 50, 500)
+
 results <- list()
 
 for (mu in mus) {
   message(mu)
-  maxSteps <- 10000/mu
-  sol <- mea(h,
-             min = minPoint,
-             max = maxPoint,
-             mu = mu,
-             maxSteps = maxSteps,
-             mutationMean = mutationMean,
-             mutationSd = mutationSd,
-             selectionMinProb = selectionMinProb)
-  results <- c(results, list(sol))
+  maxSteps <- 5000/mu
+  
+  hs <- c()
+  for (i in 1:iter) {
+    sol <- mea(h,
+               min = minPoint,
+               max = maxPoint,
+               mu = mu,
+               maxSteps = maxSteps,
+               mutationMean = mutationMean,
+               mutationSd = mutationSd)
+    hs <- c(hs, sol$h)
+  }
+  
+  results <- c(results, list(hs))
 }
 
-
-df <- data.frame(mu = mus, maxSteps = 10000/mus, mean = sapply(results, mean), sd = sapply(results, sd))
+df <- data.frame(mu = mus, maxSteps = 5000/mus, mean = sapply(results, mean), sd = sapply(results, sd))
 ```
-```{r run algo table, echo=FALSE}
-rownames(df) <- c('Najlepszy algorytmu', 'Punkt referencyjny')
-kable(df,
-      col.names = c('$\\mu_a$', '$\\sigma$'),
-      caption = paste('Wyniki pomiarów dla ', reps, ' powtórzeń z różnymi wartościami $\\theta$.'))
+```{r run algo table, include=FALSE}
+kable(df, caption = paste('Wyniki pomiarów dla ', iter, ' powtórzeń z różnymi wartościami $\\mu$ i $maxSteps$.'))
 
-boxplot(list(algorytm = soln.1, ref = refn.1))
-#text('Rozkłady wartości wyników symulacji dla najlepszego punktu otrzymanego przez algorytm i punktu referencyjnego.')
+boxplot(list("mu = 5, maxSteps = 1000" = pointsResultsN[[1]],
+             "mu = 50, maxSteps = 100" = pointsResultsN[[2]],
+             "mu = 500, maxSteps = 10" = pointsResultsN[[3]]))
 ```
+
+### Wnioski # TODO
+
+### Strojenie wartości `mutationMean` i `mutationSd`
+
+Dla ustalonych:
+```{r init vars}
+mu <- 10
+maxSteps <- 100
+```
+
+Zostaną zbadane następujące parametry $mutationMean = mutationSd = 0.1$, $mutationMean = mutationSd = 0.05$ oraz $mutationMean = mutationSd = 0.01$
+
+```{r run algorithm mutation, warning=FALSE}
+params <- c(0.1, 0.05, 0.01)
+
+results.m <- list()
+
+for (param in params) {
+  message(param)
+  mutationMean = param
+  mutationSd = param
+  hs.m <- c()
+  
+  for (i in 1:iter) {
+    sol.m <- mea(h,
+                 min = minPoint,
+                 max = maxPoint,
+                 mu = mu,
+                 maxSteps = maxSteps,
+                 mutationMean = mutationMean,
+                 mutationSd = mutationSd)
+    hs.m <- c(hs.m, sol.m$h)
+  }
+  
+  results.m <- c(results.m, list(hs.m))
+}
+
+df.m <- data.frame(mutationMean = params, mean = sapply(results.m, mean), sd = sapply(results.m, sd))
+```
+
+```{r run algo mutation table, include=FALSE}
+kable(df.m, caption = paste('Wyniki pomiarów dla ', iter, ' powtórzeń z różnymi wartościami $mutationMean$ i $mutationSd$.'))
+
+boxplot(list("param = 0.1" = results.m[[1]],
+             "param = 0.05" = results.m[[2]],
+             "param = 0.01" = results.m[[3]]))
+```
+
+### Wnioski
+Na powyższym wykresie można zaobserwować, że jakość rozwiązań generowanych przez algorytm rośnie wraz ze spadkiem
+wartości oczekiwanej i wariancji mutacji. Eksperyment pokazuje, że algorytm uruchomiony z parametrem $0.01$ daje najlepsze
+wyniki. Dodatkowo widać, iż zmniejszenie siły mutacji skutkowało większą wariancją otrzymywanych wyników, co może wynikać
+z przedwczesnego wpadania w minima lokalne. Mimo to wciąż uzystkiwano wartości co najmniej tak dobre jak dla wartości $0.05$,
+dlatego wartość $0.01$ zostanie wykorzystana w docelowym wywołaniu. 
+
+## Wyniki dla realistycznego przypadku
+Przyjmując ponownie $n = 720$, poszukiwane będzie rozwiązanie przypadku założonego na początku analizy. Pokaże to, że
+algorytm znajduje lepsze rozwiązania, niż ustalony z góry, stały podział, podsumowując wyniki naszej pracy.
+
+```{r run algorithm real, warning=FALSE}
+ref.1.2.r <- rep(1/2, 720)
+ref.2.3.r <- rep(2/3, 720)
+ref.3.4.r <- rep(3/4, 720)
+
+ref.1.2.r.results <- replicate(iter, h(ref.1.2.r))
+ref.2.3.r.results <- replicate(iter, h(ref.2.3.r))
+ref.3.4.r.results <- replicate(iter, h(ref.3.4.r))
+
+sol.r <- mea(h,
+             min = rep(0, 720),
+             max = rep(1, 720),
+             mu = 10,
+             maxSteps = 100,
+             mutationMean = 0.01,
+             mutationSd = 0.01)
+
+sol.r.results <- replicate(iter, h(sol.r$point))
+
+```
+
+```{r real boxplot}
+data.r <- list(sol.r.results, ref.1.2.r.results, ref.2.3.r.results, ref.3.4.r.results)
+df.r <- data.frame(mean = sapply(data.r, mean), sd = sapply(data.r, sd))
+rownames(df.r) <- c("sol.r", "ref.1.2", "ref.2.3", "ref.3.4")
+kable(df.r)
+
+boxplot(list('h(sol.r)' = sol.r.results,
+             'h(ref.1.2)' = ref.1.2.r.results,
+             'h(ref.2.3)' = ref.2.3.r.results,
+             'h(ref.3.4)' = ref.3.4.r.results))
+```
+
+### Wnioski
+
+# Podsumowanie

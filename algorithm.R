@@ -11,9 +11,8 @@ library(magrittr)
 #' @param maxSteps steps 
 #' @param mutationMean Mutation normal distribution mean parameter.
 #' @param mutationSd Mutation normal distribution standard deviation parameter.
-#' @param selectionMinProb Selection probability bias.
 #' @return Best point in log.
-mea <- function(heuristic, min, max, mu, maxSteps = 10, mutationMean = 1, mutationSd = mutationMean, selectionMinProb = 0.1) {
+mea <- function(heuristic, min, max, mu, maxSteps = 10, mutationMean = 1, mutationSd = mutationMean) {
   if (any(max < min)) stop('All values in min must be lower than corresponding max values.') 
   P <- initPopulation(min, max, mu)
   hP <- sapply(P, heuristic)
@@ -26,7 +25,7 @@ mea <- function(heuristic, min, max, mu, maxSteps = 10, mutationMean = 1, mutati
     # for testing
     #points(unlist(P), hP)
     #invisible(readline(prompt = "Press [enter] to continue"))
-    R <- reproduce(P, hP, mu, selectionMinProb)
+    R <- reproduce(P, hP, mu)
     
     O <- mutate(R, min, max, mutationMean, mutationSd)
     hO <- sapply(O, heuristic)
@@ -45,10 +44,10 @@ mea <- function(heuristic, min, max, mu, maxSteps = 10, mutationMean = 1, mutati
 
 initPopulation <- function(min, max, count) replicate(count, runif(length(min), min = min, max = max), simplify = FALSE)
 
-reproduce <- function(population, scores, lambda, minProb) {
+reproduce <- function(population, scores, lambda) {
   R <- list()
   for (i in 1:lambda) {
-    msk <- select(population, scores, 2, minProb = minProb)
+    msk <- select(population, scores, 2)
     R <- c(R, list(crossover(population[msk])))
   }
   R
@@ -65,8 +64,9 @@ mutate <- function(population, min, max, mean, sd) {
 
 normalize <- function(point, min, max) mod(point - min, max - min) + min
   
-select <- function(population, scores, count, minProb = 0) {
+select <- function(population, scores, count) {
   scores <- -scores # minimize
   normalizedScores <- scores - min(scores)
-  sample(1:length(population), size = count, replace = TRUE, prob = normalizedScores + minProb * mean(normalizedScores))
+  sample(1:length(population), size = count, replace = TRUE, prob = normalizedScores)
 }
+
