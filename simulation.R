@@ -2,6 +2,12 @@ library(stats)
 library(magrittr)
 library(fdrtool)
 
+#' Crossroad simulation.
+#' 
+#' @param parameters Vector of green to red light ratios for N/S direction for every step.
+#' @param trafficDists List containing vectors of mean traffic density values for direction for every day phase.
+#' @param distEscape List containing theta parameter describing cars' escape time distribution.
+#' @return All cars waiting time sum.
 simulate <- function(parameters, trafficDists, distEscape) {
   if (parameters %>% length %>% mod(24) > 0) stop('parameters number must be dividable by 24')
   
