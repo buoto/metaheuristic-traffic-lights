@@ -16,23 +16,35 @@ source('simulation.R')
 ```
 
 # Realizacja
-Celem  projektu  było  rozwiązanie  problemu  optymalizacji  działania  sygnalizacji  świetlnej na skrzyżowaniu.
-Poszukiwany był taki podział czasu świateł, aby spowodować minimalizację sumarycznego czasu spędzonego na skrzyżowaniu.
-Szczegółowe informacje zostały zawarte w pliku _koncepcja.pdf_. Poniżej znajdują się również doprecyzowane kwestie.
+Celem projektu było rozwiązanie problemu optymalizacji działania sygnalizacji świetlnej na skrzyżowaniu. Poszukiwany
+był taki podział czasu świateł, który spowodowałby minimalizację sumarycznego czasu spędzonego przez wszystkie samochody
+na skrzyżowaniu. Szczegółowe informacje zostały zawarte w pliku _koncepcja.pdf_. Poniżej znajdują się również
+doprecyzowane kwestie.
 
 W zadaniu nie była brana pod uwagę przepustowość (liczba samochodów, którym udało się w ciągu całej doby przejechać).
-Na wartość minimalizowaną została przyjęta suma czasów oczekiwania samochodów na wjazd na skrzyżowanie, ponieważ tak
-było sprecyzowane zadanie od początku. Co więcej, wartości te są ściśle skorelowane ze sobą, zatem nie warto próbować
-minimalizować ich jednocześnie.
+Za wartość minimalizowaną została przyjęta suma czasów oczekiwania samochodów na wjazd na skrzyżowanie, ponieważ tak
+było zdefiniowane przydzielone zadanie. Co więcej, wartości te są od siebie zależne, więc nie zmienia to zachowania
+zaimplementowanego algorytmu.
 
-Jedna instancja problemu została również przedefiniowana i jest to pojedynczy przebieg symulacji dla podanych parametrów
-rozkładów.
+Pojęcie jednej instancji problemu zostało przedefiniowane na pojedynczy przebieg symulacji dla podanych parametrów
+rozkładów. Z tego wynika, że funkcja celu jest niedeterministyczna. Pomiar jakości otrzymanego punktu będzie zatem
+wymagał wielokrotnego obliczenia funkcji celu.
 
 ## Symulacja (_simulation.R_)
-Zadaniem tego modułu było zasymulowanie przejazdów samochodów dla podanych czasów zmiany świateł oraz rozkładów. Czas
-przejazdu jednego samochodu przez srzyżowanie był zdefiniowany poprzez połówkowy rozkład normalny, zamiast normalnego -
-daje to pewność, że czas przejazdu przez skrzyżownanie nie będzie ujemny.
-# TODO
+Zadaniem tego modułu było zasymulowanie ruchu samochodów na skrzyżowaniu dla podanych czasów zmiany świateł oraz
+rozkładów prawdopodobieństwa przyjazdów samochodów z każdej strony skrzyżowania o określonej porze dnia. Czas przejazdu
+jednego samochodu przez skrzyżowanie został zamodelowany poprzez połówkowy rozkład normalny, zamiast normalnego - daje
+to pewność, że czas przejazdu przez skrzyżownanie nie będzie ujemny.
+
+Na początku każdego kroku algorytmu, na podstawie rozkładu prawdopodobieństwa dla danej pory dnia, symulowany jest
+przyjazd samochodów na skrzyżowanie. Następnie, przejeżdżają kolejno samochody z kierunków N/S, przez czas określony
+parametrem dla tego kroku. Jeśli wszystkie samochody z tych kierunków przejadą, to prostopadłe kierunki czekają na
+zmianę światła, a następnie przejeżdżają przez skrzyżowanie do końca czasu bieżącego kroku. Jeśli światło zmieni się
+zanim wszystkie samochody zjadą ze skrzyżowania, to czekają na kolejną zmianę świateł.
+
+Dodatkowo w trakcie każdego cyklu świateł sumowany jest czas przebywania samochodów na skrzyżowaniu - od chwili
+przyjazdu, do czasu ruszenia ze skrzyżowania. W ten sposób określana jest jakość przekazanego jako argument punktu
+przestrzeni problemu.
 
 ## Metaheurystyka
 Podczas eksperymentów dostrajane były parametry ...
@@ -102,9 +114,11 @@ wartości.
 
 ## Analiza działania algorytmu
 
+
+
 # TODO hide unnecessary part
-```{r, eval=FALSE, include=FALSE}
-h.1 <- function (parameters) simulate(parameters,
+```{r run algorithm, message=FALSE, warning=FALSE}
+h.1 <- function(parameters) simulate(parameters,
          list(morning = c(2, 3, 1, 0.5), noon = c(0.5, 0.5, 0.2, 0.1), afternoon = c(4, 5, 2, 1), night = c(0.3, 0.2, 0.05, 0.1)),
          list(theta = 4))
 refn.1 <- replicate(reps, h.1(ref))

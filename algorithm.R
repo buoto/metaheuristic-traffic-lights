@@ -20,7 +20,7 @@ mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutation
   
   for (t in 1:maxSteps) {
     #tic()
-    print(t)
+    message('generation ', t)
     # for testing
     #points(unlist(P), hP)
     #invisible(readline(prompt = "Press [enter] to continue"))
@@ -31,7 +31,7 @@ mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutation
     
     if (min(hO) < best$h) {
       best <- list(point = O[[which.min(hO)]], h = min(hO))
-      print(c(best = best$h))
+      message('new best found h = ', best$h)
     }
     
     P <- O
