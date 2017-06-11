@@ -3,11 +3,12 @@ title: "Sygnalizacja świetlna"
 author: "Michał Błotniak & Adrianna Małkiewicz"
 date: "10.06.2017"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
   word_document: default
 ---
 
+# TODO hide this
 ```{r setup}
 library(knitr)
 source('algorithm.R')
@@ -28,10 +29,14 @@ Jedna instancja problemu została również przedefiniowana i jest to pojedynczy
 rozkładów.
 
 ## Symulacja (_simulation.R_)
-Zadaniem tego modułu było zasymulowanie przejazdów samochodów dla podanych czasów zmiany świateł oraz rozkładów. # TODO
+Zadaniem tego modułu było zasymulowanie przejazdów samochodów dla podanych czasów zmiany świateł oraz rozkładów. Czas
+przejazdu jednego samochodu przez srzyżowanie był zdefiniowany poprzez połówkowy rozkład normalny, zamiast normalnego -
+daje to pewność, że czas przejazdu przez skrzyżownanie nie będzie ujemny.
+# TODO
 
 ## Metaheurystyka
-Podczas eksperymentów dostrajane były parametry ... # TODO
+Podczas eksperymentów dostrajane były parametry ...
+# TODO
 
 # Przebieg eksperymentów
 Na początku zostały przyjęte intuicyjnie przykładowe wartości parametrów symulacji.
@@ -43,21 +48,27 @@ trafficDists <- list(morning = c(2, 2, 1, 0.5),
                      night = c(0.3, 0.2, 0.05, 0.1))
 ```
 
-Powyższa lista zawiera wektory wartości oczekiwanych rozkładów natężenia ruchu: z każdego kierunku i dla kolejnych pór dnia.
-W eksperymentach przyjęty został podział doby na 720 kawałków, po 2 minuty w trakcie których każdorazowo dokonywana jest zmiana świateł.
-Dodatkowo wykorzystywany jest punkt referencyjny `ref`, reprezentujący strategię, w której zmiana świateł następuje co minutę:
+Powyższa lista zawiera wektory wartości oczekiwanych rozkładów natężenia ruchu: z każdego kierunku i dla kolejnych pór
+dnia. W eksperymentach został przyjęty podział doby na 720 kawałków (po 2 minuty), w trakcie których każdorazowo
+dokonywana jest zmiana świateł.
+
+Dodatkowo, wykorzystywany jest punkt referencyjny `ref`, reprezentujący strategię, w której zmiana świateł następuje co
+minutę (po równo dla obu stron skrzyżowania):
+
 ```{r init rep}
 ref <- rep(1/2, 720)
 ```
 
 ## Dobór współczynnika theta
+Początkowo został poddany analizie wpływ współczynnika `theta` połówkowego rozkładu normalnego, opisującego czas
+przejazdu przez skrzyżowanie. Współczynnik ten ma wprost przełożenie na wartość średnią liczby samochodów
+przejeżdżających przez skrzyżowanie w trakcie jednego kwantu czasu (2 minuty), co wynika z charakterystyki połówkowego
+rozkładu normalnego.
 
-Dokonany został poddany analizie wpływ współczynnika `theta` połówkowego rozkładu normalnego, opisującego czas przejazdu przez skrzyżowanie. Współczynnik
-ten ma wprost przełożenie na wartość średnią ilości samochodów przejeżdżających przez skrzyżowanie w trakcie jednego kwantu czasu (2 minuty), co wynika
-z charakterystyki połówkowego rozkładu normalnego.
+Poniżej znajduje się tabela z wynikami pomiarów dla wartości $\theta$ z przedziału od 1 do 20. Model zwraca wyniki w
+kwantach czasowych równych 2 minuty.
 
-Poniżej znajduje się tabela z wynikami pomiarów dla wartości $\theta$ z przedziału od 1 do 20. Model zwraca wyniki w kwantach czasowych równych 2 minuty.
-
+# TODO remove unnecessary part
 ```{r theta}
 reps <- 2 # TODO more on prod
 thetas <- seq(1, 20, length = 20)
@@ -67,6 +78,7 @@ for (theta in thetas) {
   a <- replicate(reps, simulate(ref, trafficDists = trafficDists, list(theta = theta)))
   results <- c(results, list(a))
 }
+
 m <- results %>% sapply(mean)
 s <- results %>% sapply(sd)
 df <- data.frame(theta = thetas, t =1/thetas * 120, mean = m, sd = s, cv = s/m)
@@ -76,19 +88,21 @@ kable(df, col.names = c('$\\theta$', '$t$', '$\\mu_a$', '$\\sigma_a$', '$c_v$'),
 
 ### Wnioski
 
-Z powyższych danych wynika, że współczynnik zmienności wartości zwracanych przez model $c_v$ maleje wraz ze wzrostem $\theta$,
-a od pewnego momentu utrzymuje się na stałym poziomie. Dodatkowo uśrednione wartości zwracane przez model $\mu_a$ spadają do
-$300$ kwantów czasu.
+Z powyższych danych wynika, że współczynnik zmienności wartości zwracanych przez model $c_v$ maleje wraz ze wzrostem
+$\theta$, a od pewnego momentu utrzymuje się na stałym poziomie. Dodatkowo uśrednione wartości zwracane przez model
+$\mu_a$ spadają do $300$ kwantów czasu.
 
-Oznacza to, że wszystkie samochody czekały łącznie mniej niż połowę doby. Jest to niepożadane zjawisko
-spowodowane zbyt dużą wartością współczynnika $\theta$ (znacznie większą niż największa wartość oczekiwana natężenia ruchu, która była równa 2).
-W takiej sytuacji samochody przejeżdżają tak szybko w stosunku do ich przybywania, że optymalną strategią jest przełączanie świateł w proporcjach 
-$1:1$ będąca punktem referencyjnym `ref`.
+Oznacza to, że wszystkie samochody czekały łącznie mniej niż połowę doby. Jest to niepożądane zjawisko, spowodowane zbyt
+dużą wartością współczynnika $\theta$ (znacznie większą niż największa wartość oczekiwana natężenia ruchu, która była
+równa 2). W takiej sytuacji samochody przejeżdżają tak szybko w stosunku do ich przybywania, że optymalną strategią jest
+przełączanie świateł w proporcjach $1:1$ charakteryzjących punkt referencyjny `ref`.
 
-Wynika stąd, że algorytm będzie miał przewagę dla wartości $\theta$ bliskich `max(trafficDists)` oraz mniejszych od tej wartości.
+Wynika stąd, że algorytm będzie miał przewagę dla wartości $\theta$ bliskich `max(trafficDists)` oraz mniejszych od tej
+wartości.
 
 ## Analiza działania algorytmu
 
+# TODO hide unnecessary part
 ```{r}
 h.1 <- function (parameters) simulate(parameters,
          list(morning = c(2, 3, 1, 0.5), noon = c(0.5, 0.5, 0.2, 0.1), afternoon = c(4, 5, 2, 1), night = c(0.3, 0.2, 0.05, 0.1)),
@@ -106,7 +120,3 @@ kable(df,
 boxplot(list(algorytm = soln.1, ref = refn.1))
 #text('Rozkłady wartości wyników symulacji dla najlepszego punktu otrzymanego przez algorytm i punktu referencyjnego.')
 ```
-
-
-
-
