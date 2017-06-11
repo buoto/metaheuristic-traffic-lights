@@ -23,12 +23,8 @@ mea <- function(bounds, mu, heuristic, maxSteps = 10, mutationMean = 1, mutation
     print(t)
     # for testing
     #points(unlist(P), hP)
-    #invisible(readline(prompt="Press [enter] to continue"))
-    R <- list()
-    for (i in 1:mu) {
-      msk <- select(P, hP, 2, minProb = selectionMinProb)
-      R <- c(R, list(crossover(P[msk])))
-    }
+    #invisible(readline(prompt = "Press [enter] to continue"))
+    R <- reproduce(P, hP, mu, selectionMinProb)
     
     O <- mutate(R, bounds, mutationMean, mutationSd)
     hO <- sapply(O, heuristic)
@@ -49,7 +45,14 @@ initPopulation <- function(bounds, count) replicate(count, randomPoint(bounds), 
 
 randomPoint <- function(bounds) sapply(bounds, function(range) runif(1, min = range[1], max = range[2]))
 
-reproduce <- function(population) population %>% combn(2, simplify = FALSE) %>%  lapply(crossover)
+reproduce <- function(population, scores, lambda, minProb) {
+  R <- list()
+  for (i in 1:lambda) {
+    msk <- select(population, scores, 2, minProb = minProb)
+    R <- c(R, list(crossover(population[msk])))
+  }
+  R
+}
 
 crossover <- function(pair) {
   ratio <- runif(1)
