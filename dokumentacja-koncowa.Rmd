@@ -27,7 +27,8 @@ było zdefiniowane przydzielone zadanie. Co więcej, wartości te są od siebie 
 zaimplementowany algorytm zachowywałby się tak samo.
 
 Pojęcie jednej instancji problemu zostało przedefiniowane na pojedynczy przebieg symulacji dla podanych parametrów
-rozkładów. Z tego wynika, że funkcja celu jest niedeterministyczna.
+rozkładów prawdopodobienstw przyjazdu samochodu oraz czasu przejazdu przez skrzyżowanie. Z tego wynika, że funkcja celu
+jest niedeterministyczna.
 
 ## Symulacja (_simulation.R_)
 Zadaniem tego modułu było zasymulowanie ruchu samochodów na skrzyżowaniu dla podanych czasów zmiany świateł oraz
@@ -50,7 +51,7 @@ Zaimplementowany algorytm został zmodyfikowany względem tego opisanego w konce
 do krzyżowania. W obecnej wersji z populacji wybierane są pary zgodnie z opisanymi wcześniej regułami selekcji
 proporcjonalnej. Dodatkowo wykorzystywana jest sukcesja generacyjna - potomstwo w pełni zastępuje pokolenie rodziców.
 Zmiany były podyktowane kwestiami wydajnościowymi. Wykorzystywane wcześniej krzyżowanie każdy z każdym wymagało
-wielokrotnego uruchamiania symulacji dla potomstwa bardzo niskiej jakości.
+wielokrotnego uruchamiania symulacji dla potomstwa niskiej jakości.
 
 W trakcie działania algorytmu zapisywany jest najlepszy osobnik ze wszystkich pokoleń. Osobnik ten jest zwracany
 po osiągnięciu limitu pokoleń `maxSteps`. 
@@ -61,24 +62,25 @@ Zaimplementowany algorytm minimalizuje funkcję celu.
 - `heuristic` - funkcja przyjmująca `n` wymiarowy punkt przestrzeni rozwiązania i zwracająca jego ocenę,
 - `min` - kres dolny przestrzeni rozwiązań,
 - `max` - kres górny przestrzeni rozwiązań,
-- `mu` - liczba osobników w populacji,
+- `mu` - wielkość populacji,
 - `maxSteps` - liczba generowanych pokoleń,
 - `mutationMean` - wartość średnia rozkładu mutacji.
 
 Podczas eksperymentów dostrajane były parametry `mu`, `maxSteps`, `mutationMean`, `mutationSd`.
 
 Argumenty `mu` i `maxSteps` wpływają na działanie algorytmu w podobny sposób - wraz z ich zwiększeniem algorytm znajduje
-lepsze rozwiązania kosztem wydłużenia czasu obliczeń. Strojenie tych parametrów będzie przeprowadzane z ustalonym
-stosunkiem wartości `maxSteps = 5000/mu`.
+lepsze rozwiązania kosztem wydłużenia czasu obliczeń. Badany jednak będzie stosunek `mu` do `maxSteps`, w celu ustalenia,
+czy lepiej jest wygenerować większą populację na początku i mniejszą ilość pokoleń, czy na odwrót. Strojenie tych
+parametrów będzie zatem przeprowadzane z ustalonym stosunkiem wartości `maxSteps = 1000/mu`.
 
 Odpowiednio duże wartości parametrów `mutationMean`, `mutationSd` pozwalają algorytmowi na opuszczenie minimum lokalnego
 wspomagając eksplorację. Jednakże zbyt duże zwiększenie tych argumentów pogorsza jakość znajdowanych optimów. Strojenie
-będzie polegało na sprawdzeniu, jakie wartości poprawiają działanie algorytmu przy założeniu $mutationMean = mutationSd$
+będzie polegało na sprawdzeniu, jakie wartości poprawiają działanie algorytmu przy założeniu $mutationMean = mutationSd$.
 
 # Przebieg eksperymentów
-W eksperymentach został przyjęty podział doby na 720 kawałków (po 2 minuty), w trakcie których każdorazowo wykonywany
-jest pełen cykl zmiany świateł. Zostały również przyjęte przykładowe wartości parametrów symulacji, bazując na średniej
-przepustowości polskich dróg z [Generalnego Pomiaru Ruchu GDDKiA](https://www.gddkia.gov.pl/userfiles/articles/g/generalny-pomiar-ruchu-w-2015_15598//SYNTEZA/Synteza_GPR2015.pdf)
+Do przeprowadzenia eksperymentu został przyjęty podział doby na 720 kawałków (po 2 minuty), w trakcie których
+każdorazowo wykonywany jest pełen cykl zmiany świateł. Zostały również przyjęte przykładowe wartości parametrów
+symulacji, bazując na średniej przepustowości polskich dróg z [Generalnego Pomiaru Ruchu GDDKiA](https://www.gddkia.gov.pl/userfiles/articles/g/generalny-pomiar-ruchu-w-2015_15598//SYNTEZA/Synteza_GPR2015.pdf)
 (średni ruch = $11178 poj./24~godz. \approx 15 poj./2~min.$). Modelowana jest sytuacja, gdy trasa N/S ma większą
 przepustowość niż trasa W/E.
 
@@ -100,17 +102,20 @@ theta <- 15
 h <- function(point) simulate(point, trafficDists = trafficDists, list(theta = theta)) 
 ```
 
-Z uwagi na niedeterminizm działania algorytmu, będzie on powtarzany `iter` razy .
+Z uwagi na niedeterminizm działania algorytmu, będzie on powtarzany `iter` razy.
+
 ```{r iter}
 iter <- 10
 ```
 
-Liczba przedziałów `n` na potrzeby strojenia algorytmu zostaje zmniejszona do 120:
+Jedynie na potrzeby strojenia algorytmu, liczba pokoleń `n` zostaje zmniejszona do 72:
+
 ```{r n}
 n <- 72
 ```
 
 Przestrzeń przeszukiwań jest ograniczona wektorami:
+
 ```{r min max, echo=TRUE}
 minPoint <- rep(0, n)
 maxPoint <- rep(1, n)
@@ -130,11 +135,15 @@ ref.3.4.results <- replicate(iter, h(ref.3.4))
 ```
 
 Poniżej prezentowane jest zestawienie wyników otrzymywanych w symulacjach dla punktów referencyjnych.
-```{r rep boxplot}
+
+```{r rep boxplot, echo=FALSE}
 boxplot(list('h(ref.1.2)' = ref.1.2.results,
              'h(ref.2.3)' = ref.2.3.results,
              'h(ref.3.4)' = ref.3.4.results))
 ```
+
+Jak widać, lepsze wyniki uzyskują strategie faworyzujące kierunek N/S. Trudno jest jednoznacznie określić, który sposób
+jest najlepszy, z racji zbliżonych wartości średnich i odchyleń standardowych.
 
 ## Analiza działania algorytmu
 
@@ -146,19 +155,19 @@ mutationMean <- 0.1
 mutationSd <- 0.1
 ```
 
-Poniższy eksperyment ma na celu rozstrzygnięcie jaki stosunek $\\mu$ do `maxSteps` daje najlepszy wynik działania
-algorytmiu.
+Poniższy eksperyment ma na celu rozstrzygnięcie jaki stosunek `mu` do `maxSteps` daje najlepszy wynik działania
+algorytmu.
 
-```{r run algorithm}
-mus <- c(5, 50, 500)
+```{r run algorithm, message=FALSE, warning=FALSE}
+mus <- c(2, 10, 100)
 
 results <- list()
 
 for (mu in mus) {
   message(mu)
-  maxSteps <- 5000/mu
-  
+  maxSteps <- 1000/mu
   hs <- c()
+  
   for (i in 1:iter) {
     sol <- mea(h,
                min = minPoint,
@@ -173,21 +182,25 @@ for (mu in mus) {
   results <- c(results, list(hs))
 }
 
-df <- data.frame(mu = mus, maxSteps = 5000/mus, mean = sapply(results, mean), sd = sapply(results, sd))
+df <- data.frame(mu = mus, maxSteps = 1000/mus, mean = sapply(results, mean), sd = sapply(results, sd))
 ```
-```{r run algo table, include=FALSE}
+```{r run algo table, echo=FALSE}
 kable(df, caption = paste('Wyniki pomiarów dla ', iter, ' powtórzeń z różnymi wartościami $\\mu$ i $maxSteps$.'))
 
-boxplot(list("mu = 5, maxSteps = 1000" = pointsResultsN[[1]],
-             "mu = 50, maxSteps = 100" = pointsResultsN[[2]],
-             "mu = 500, maxSteps = 10" = pointsResultsN[[3]]))
+boxplot(list("mu = 2" = results[[1]],
+             "mu = 10" = results[[2]],
+             "mu = 100" = results[[3]]))
 ```
 
-### Wnioski # TODO
+### Wnioski
+Eksperyment wykazał, że mała liczba osobników daje słaby rezultat. W przypadku pozostałych dwóch wartości wartość
+średnia i odchylenie standardowe są prawie identyczne, gdyż w obu przypadkach algorytm był w stanie przejrzeć taką samą
+liczbę punktów. Jednakże wariant z większym rozmiarem populacji rzadziej osiadał w minimum lokalnym, z powodu dłużej
+utrzymującego się rozproszenia populacji.
 
 ### Strojenie wartości `mutationMean` i `mutationSd`
-
 Dla ustalonych:
+
 ```{r init vars}
 mu <- 10
 maxSteps <- 100
@@ -195,9 +208,8 @@ maxSteps <- 100
 
 Zostaną zbadane następujące parametry $mutationMean = mutationSd = 0.1$, $mutationMean = mutationSd = 0.05$ oraz $mutationMean = mutationSd = 0.01$
 
-```{r run algorithm mutation, warning=FALSE}
+```{r run algorithm mutation, message=FALSE, warning=FALSE}
 params <- c(0.1, 0.05, 0.01)
-
 results.m <- list()
 
 for (param in params) {
@@ -223,7 +235,7 @@ for (param in params) {
 df.m <- data.frame(mutationMean = params, mean = sapply(results.m, mean), sd = sapply(results.m, sd))
 ```
 
-```{r run algo mutation table, include=FALSE}
+```{r run algo mutation table, echo=FALSE}
 kable(df.m, caption = paste('Wyniki pomiarów dla ', iter, ' powtórzeń z różnymi wartościami $mutationMean$ i $mutationSd$.'))
 
 boxplot(list("param = 0.1" = results.m[[1]],
@@ -242,7 +254,7 @@ dlatego wartość $0.01$ zostanie wykorzystana w docelowym wywołaniu.
 Przyjmując ponownie $n = 720$, poszukiwane będzie rozwiązanie przypadku założonego na początku analizy. Pokaże to, że
 algorytm znajduje lepsze rozwiązania, niż ustalony z góry, stały podział, podsumowując wyniki naszej pracy.
 
-```{r run algorithm real, warning=FALSE}
+```{r run algorithm real, message=FALSE, warning=FALSE}
 ref.1.2.r <- rep(1/2, 720)
 ref.2.3.r <- rep(2/3, 720)
 ref.3.4.r <- rep(3/4, 720)
@@ -263,7 +275,7 @@ sol.r.results <- replicate(iter, h(sol.r$point))
 
 ```
 
-```{r real boxplot}
+```{r real boxplot, echo=FALSE}
 data.r <- list(sol.r.results, ref.1.2.r.results, ref.2.3.r.results, ref.3.4.r.results)
 df.r <- data.frame(mean = sapply(data.r, mean), sd = sapply(data.r, sd))
 rownames(df.r) <- c("sol.r", "ref.1.2", "ref.2.3", "ref.3.4")
@@ -276,5 +288,15 @@ boxplot(list('h(sol.r)' = sol.r.results,
 ```
 
 ### Wnioski
+Jak widać na powyższych diagramach punkt otrzymany już w setnej generacji osiągnął ponad dwukrotnie lepszy wynik od
+metod referencyjnych. Widoczna na diagramie wariancja wynika z niedeterminizmu funkcji oceny i jest podobna co
+do rzędu wielkości we wszystkich przypadkach.
 
 # Podsumowanie
+Zaimplementowany algorytm spełnił założone zadanie - osiągnął wynik znacznie lepszy od z góry ustalonych strategii.
+Pomimo niedeterminizmu funkcji celu wykorzystana metoda poradziła sobie dobrze w jej minimalizowaniu.
+Dodatkowo interfejs algorytmu oferuje kilka parametrów modyfikujących jego zachowanie pozwalających na dostosowanie
+jego zachowania do innych problemów. 
+
+Sporym kłopotem okazała się złożoność obliczeniowa symulacji. W przypadku algorytmu ewolucyjnego, gdzie jej wartość
+obliczana jest wielokrotnie, znacznie utrudniło to strojenie algorytmu, zwłaszcza dla dużych wartości natężenia ruchu.
