@@ -46,7 +46,7 @@ Dodatkowo w trakcie każdego cyklu świateł sumowany jest czas przebywania samo
 przyjazdu, do czasu ruszenia ze skrzyżowania. W ten sposób określana jest jakość przekazanego jako argument punktu
 przestrzeni problemu.
 
-## Metoda optymalizacji
+## Metoda optymalizacji (_algorithm.R_)
 Zaimplementowany algorytm został zmodyfikowany względem tego opisanego w koncepcji. Główną różnicą jest dobór osobników
 do krzyżowania. W obecnej wersji z populacji wybierane są pary zgodnie z opisanymi wcześniej regułami selekcji
 proporcjonalnej. Dodatkowo wykorzystywana jest sukcesja generacyjna - potomstwo w pełni zastępuje pokolenie rodziców.
@@ -74,81 +74,61 @@ szybciej znajduje minimum lokalne, natomiast duża wartość `mutationMean`, `mu
 algorytmowi na opuszczenie minimum lokalnego wspomagając eksplorację.
 
 # Przebieg eksperymentów
-Na początku zostały przyjęte intuicyjnie przykładowe wartości parametrów symulacji.
+Na początku zostały przyjęte przykładowe wartości parametrów symulacji, bazując na średniej przepustowości polskich dróg
+z [Generalnego Pomiaru Ruchu GDDKiA](https://www.gddkia.gov.pl/userfiles/articles/g/generalny-pomiar-ruchu-w-2015_15598//SYNTEZA/Synteza_GPR2015.pdf)
+(średni ruch = $11178 poj./24~godz. \approx 15 poj./2~min.$). Modelowana jest sytuacja, gdy trasa N/S ma większą
+przepustowość niż trasa W/E.
 
 ```{r init traffic}
-trafficDists <- list(morning = c(16, 15, 4, 7),
-                     noon = c(8, 9, 12, 3),
-                     afternoon = c(15, 16, 6, 6),
-                     night = c(3, 2, 0.5, 1))
+trafficDists <- list(morning = c(20, 17, 6, 9),
+                     noon = c(11, 9, 15, 5),
+                     afternoon = c(18, 19, 8, 7),
+                     night = c(4, 3, 1, 2))
 ```
 
 Powyższa lista zawiera wektory wartości oczekiwanych rozkładów natężenia ruchu (liczba samochodów przyjeżdżających
 w kwancie czasu): z każdego kierunku i dla kolejnych pór dnia. W eksperymentach został przyjęty podział doby
-na 720 kawałków (po 2 minuty), w trakcie których każdorazowo dokonywana jest zmiana świateł.
+na 720 kawałków (po 2 minuty), w trakcie których każdorazowo wykonywany jest pełen cykl zmiany świateł.
 
-Dodatkowo, wykorzystywany jest punkt referencyjny `ref`, reprezentujący strategię, w której zmiana świateł następuje co
-minutę (po równo dla obu stron skrzyżowania):
+Przyjęty został także średni czas zjeżdżania ze skrzyżowania równy $8s$. Wartość oczekiwana połówkowego rozkładu
+normalnego wynosi $1/\theta$, zatem współczynnik $\theta$ jest równy $\theta = \frac{2~min.}{8~s} = 15$
+
+```{r init heur}
+theta <- 15
+
+h <- function(point) simulate(point, trafficDists = trafficDists, list(theta = theta)) 
+```
+
+Dodatkowo przyjęte zostały punkty referencyjne ze stałą proporcją podziału cyklu świateł ustaloną a priori
+($1/2$, $2/3$ i $3/4$ czasu dla kierunku N/S):
 
 ```{r init rep}
-ref <- rep(1/2, 720)
+ref.1.2 <- rep(1/2, 720)
+ref.2.3 <- rep(2/3, 720)
+ref.3.4 <- rep(3/4, 720)
 ```
-
-## Dobór współczynnika theta
-Początkowo został poddany analizie wpływ współczynnika `theta` połówkowego rozkładu normalnego, opisującego czas
-przejazdu przez skrzyżowanie. Współczynnik ten ma wprost przełożenie na wartość średnią liczby samochodów
-przejeżdżających przez skrzyżowanie w trakcie jednego kwantu czasu (2 minuty), co wynika z charakterystyki połówkowego
-rozkładu normalnego.
-
-Poniżej znajduje się tabela z wynikami pomiarów dla wartości $\theta$ z przedziału od 1 do 20. Model zwraca wyniki w
-kwantach czasowych równych 2 minuty.
-
-# TODO remove unnecessary part
-```{r theta}
-reps <- 2 # TODO more on prod
-thetas <- seq(1, 60, length = 20)
-
-results <- list()
-for (theta in thetas) {
-  a <- replicate(reps, simulate(ref, trafficDists = trafficDists, list(theta = theta)))
-  results <- c(results, list(a))
-}
-
-m <- results %>% sapply(mean)
-s <- results %>% sapply(sd)
-df <- data.frame(theta = thetas, t = 1/thetas * 120, mean = m, sd = s, cv = s/m)
-kable(df, col.names = c('$\\theta$', '$t$', '$\\mu_a$', '$\\sigma_a$', '$c_v$'),
-      caption = paste('Wyniki pomiarów dla ', reps, ' powtórzeń z różnymi wartościami $\\theta$.'))
-```
-
-### Wnioski
-
-Z powyższych danych wynika, że współczynnik zmienności wartości zwracanych przez model $c_v$ maleje wraz ze wzrostem
-$\theta$, a od pewnego momentu utrzymuje się na stałym poziomie. Dodatkowo uśrednione wartości zwracane przez model
-$\mu_a$ spadają do $4300$ kwantów czasu.
-
-Oznacza to, że wszystkie samochody czekały łącznie mniej niż połowę doby. Jest to niepożądane zjawisko, spowodowane zbyt
-dużą wartością współczynnika $\theta$ (znacznie większą niż największa wartość oczekiwana natężenia ruchu, która była
-równa 16). W takiej sytuacji samochody przejeżdżają tak szybko w stosunku do ich przybywania, że optymalną strategią jest
-przełączanie świateł w proporcjach $1:1$ charakteryzjących punkt referencyjny `ref`.
-
-Wynika stąd, że algorytm będzie miał przewagę dla wartości $\theta$ bliskich `max(trafficDists)` oraz mniejszych od tej
-wartości.
 
 ## Analiza działania algorytmu
 
-
-
-# TODO hide unnecessary part
-```{r run algorithm, message=FALSE, warning=FALSE}
+```{r run algorithm, warning=FALSE}
 h.1 <- function(parameters) simulate(parameters,
-         list(morning = c(2, 3, 1, 0.5), noon = c(0.5, 0.5, 0.2, 0.1), afternoon = c(4, 5, 2, 1), night = c(0.3, 0.2, 0.05, 0.1)),
+         list(morning = c(2, 3, 1, 0.5),
+              noon = c(0.5, 0.5, 0.2, 0.1),
+              afternoon = c(4, 5, 2, 1),
+              night = c(0.3, 0.2, 0.05, 0.1)),
          list(theta = 4))
 refn.1 <- replicate(reps, h.1(ref))
-solution.1 <- mea(h.1, min = rep(0, 720), max = rep(1, 720), 10, maxSteps = 100, mutationMean = 0.01)
+solution.1 <- mea(h.1,
+                  min = rep(0, 720),
+                  max = rep(1, 720),
+                  mu = 10,
+                  maxSteps = 100,
+                  mutationMean = 0.01)
 soln.1 <- replicate(reps, h.1(solution.1$point))
 
 df <- data.frame(mean = c(mean(soln.1), mean(refn.1)), sd = c(sd(soln.1), sd(refn.1)))
+```
+```{r run algo table, echo=FALSE}
 rownames(df) <- c('Najlepszy algorytmu', 'Punkt referencyjny')
 kable(df,
       col.names = c('$\\mu_a$', '$\\sigma$'),
