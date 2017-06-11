@@ -20,11 +20,7 @@ mea <- function(heuristic, min, max, mu, maxSteps = 10, mutationMean = 1, mutati
   best <- list(point = P[[which.min(hP)]], h = min(hP))
   
   for (t in 1:maxSteps) {
-    #tic()
     message('generation ', t)
-    # for testing
-    #points(unlist(P), hP)
-    #invisible(readline(prompt = "Press [enter] to continue"))
     R <- reproduce(P, hP, mu)
     
     O <- mutate(R, min, max, mutationMean, mutationSd)
@@ -37,13 +33,24 @@ mea <- function(heuristic, min, max, mu, maxSteps = 10, mutationMean = 1, mutati
     
     P <- O
     hP <- hO
-    #toc()
   }
   best
 }
 
+#' Generate random points in given space.
+#' 
+#' @param min Space lower bound.
+#' @param max Space upper bound.
+#' @param count Count of generated points.
+#' @return List of random points in given space.
 initPopulation <- function(min, max, count) replicate(count, runif(length(min), min = min, max = max), simplify = FALSE)
 
+#' Select and crossover lambda pairs from population with respect to score.
+#' 
+#' @param population Population of points to select.
+#' @param scores Population scores in the same order as in population argument.
+#' @param lambda Count of individuals to create.
+#' @return List reproduced points.
 reproduce <- function(population, scores, lambda) {
   R <- list()
   for (i in 1:lambda) {
@@ -53,17 +60,42 @@ reproduce <- function(population, scores, lambda) {
   R
 }
 
+#' Crossover two points in given pair.
+#' 
+#' @param pair Pair of points.
+#' @return Child - new point, product of crossover.
 crossover <- function(pair) {
   ratio <- runif(1)
   pair[[1]] * ratio + pair[[2]] * (1 - ratio)
 }
 
+#' Mutate population using distribution described by mean and sd arguments
+#' with respect to min/max bounds.
+#' 
+#' @param population List of points to mutate.
+#' @param min Space lower bound.
+#' @param max Space upper bound.
+#' @param mean Mean of mutation distribution.
+#' @param sd Standard distribution of mutation.
+#' @return Mutated population.
 mutate <- function(population, min, max, mean, sd) {
   lapply(population, function(point) (point + rnorm(length(point), mean = mean, sd = sd)) %>% normalize(min, max))
 }
 
+#' Project point into given bounds.
+#' 
+#' @param point Vector - point to project.
+#' @param min Space lower bound.
+#' @param max Space upper bound.
+#' @return Projected point.
 normalize <- function(point, min, max) mod(point - min, max - min) + min
-  
+
+#' Select count points from population with respect to their scores.
+#' 
+#' @param population List of points.
+#' @param scores Vector with population scores.
+#' @param count Number - count of points to select.
+#' @return List of selected points.
 select <- function(population, scores, count) {
   scores <- -scores # minimize
   normalizedScores <- scores - min(scores)
